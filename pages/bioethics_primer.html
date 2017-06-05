@@ -1,0 +1,235 @@
+<head>
+    <style>
+        div#tooltip{
+            position: absolute;
+            text-align: left;
+            width: 250px;
+            height: 20px;
+            padding: 5px;
+            font-size: 14px;
+            background: white;
+            border: 0px;
+            border-radius: 8px;
+            pointer-events: none;
+        }
+        
+        div#info{
+            position: absolute;
+            width: 1200;
+            height: 600;
+            padding: 10px;
+            font-size: 18px;
+            background: white;
+            border: 0px;  
+            z-index: 0;
+        }
+        
+        div#chart{
+            z-index: 1;
+        }
+        
+    </style>
+</head>
+<body>
+    <div id = 'info'>
+        <h1>Educational Use of Network Graphs: Bioethics</h1>
+        <p class = 'demo' style = 'color: red;'><b>Click here when ready to see the demo.</b></p>        
+        <p>Network graphs are often used to show relationships in social and business contexts. A typical use case for network graphs is to show similiarities and differences in Twitter accounts with regards to sentiments on a certain #topic. Another typical use case for network graphs is to show the buying patterns of customers. Both use cases are useful for businesses and scholars for gaining new insights within their respective fields - that is, the network graph is typically used for exploratory purposes.</p>
+        <p>I have not, however, seen many cases of network graphs being used for pedagogical purposes. Most teachers would probably not consider the network graph as an educational tool. However, here I would like to show an example of how network graphs - with their interactivity and focus on the adjacency of concepts - can be used to convey the overall themes of a course.</p>
+        <p>A typical university course will provide a a syllabus which is a linear display of information. A syllabus generally has the following layout:</p>
+        <ol>
+            <li><b>First Theme of the Course:</b><ul><li>topic</li><li>topic</li></ul></li>
+            <li><b>Second Theme of the Course:</b><ul><li>topic</li><li>topic</li></ul></li>
+            <li><b>Third Theme of the Course:</b><ul><li>topic</li><li>topic</li></ul></li>
+        </ol>
+        <p>The syllabus layout provides a brief summary of a courses offering and maybe suggests a hierarchy of information (the first theme is probably more fundamental than the second theme which is more fundamental than the third...). However, when it comes time to review the information, it only serves as a temporal reminder of what was learned and when it was learned - it does not show how individual topics within different themes relate to eachother</p>
+        <p>The following demo that I present will show how a teacher can both provide structure to a course syllabus, while allowing a student to explore and visualize the overal relationships and themse of a course. While exploring the demo please pay attention to:</p>
+        <ol>
+            <li>How hovering over a link allows a teacher to engage the student with questions regarding the connected nodes.</li>
+            <li>How the network structure allows for the student to make connections between concepts that are not directly related.</li>
+            <li>And how the student can drag the nodes to clarify different connections.</li>
+        </ol>
+        <p><b>It is important to note that this is just a prototype and that the information shown within each node was found in various sites on the web - primarily Wikipedia. The content is not my own and I have provided links to the different sources of information.</b></p>
+        <p class = 'demo'><b>Click here when ready to see the demo.</b></p>
+        <br>
+    </div>
+</body>
+<script src = '../libraries/d3.js'></script>
+<script src = '../libraries/d3v4+jetpack.js'></script>
+<script>
+    
+    var tooltip = d3.select('body')
+        .append('div#tooltip')
+        .st({opacity: 0});
+    
+    var info = d3.select('#info');
+            
+    var svg = d3.select('body')
+        .append('div#chart')
+        .append('svg')
+        .at({width: 1000, height: 700});
+
+    var color = d3.scaleOrdinal()
+        .range(['#a6cee3','#1f78b4','#b2df8a','#33a02c'])
+        .domain(['Reproductive Ethics', 'Research Ethics', 'Medical Ethics', 'Animal Rights']);    
+    
+    d3.selectAll('.demo')
+        .st({cursor: 'pointer', color: 'green'})
+        .on('mouseover', () => d3.selectAll('.demo').st({color: 'black', 'font-size': 20}))
+        .on('mouseout', () => d3.selectAll('.demo').st({color: 'green', 'font-size': 18}))
+        .on('click', () => {d3.json('../data/bioethics.json', network); window.scrollTo(0, 0)});
+    
+    function network(data){
+        var bioethics = data.nodes;
+        var links = data.links;
+        var nodeHash = bioethics.reduce((hash, node) => {hash[node.id] = node; return hash}, {});
+        var normalRadius = 10,
+            enlargedRadius = 15,
+            normalNodeWidth = 1,
+            enlargedNodeWidth = 3,
+            normalLinkWidth = 3,
+            connectedLinkWidth = 5,
+            forceStrength = -150,
+            centerX = 500,
+            centerY = 350,
+            normalLinkStroke = 'black',
+            connectedLinkStroke = 'orange',
+            tooltipOpacity = .75;
+        
+        svg.append('text')
+            .at({x: 50, y: 50, stroke: 'black', 'font-size': 50})
+            .text('Bioethics 101')
+        info.st({'z-index': 0, opacity: 0, width: 0, height: 0})
+            .html('')
+        
+        info.append('div#text');
+
+        links.forEach(edge => {
+            edge.source = nodeHash[edge.source];
+            edge.target = nodeHash[edge.target];
+        });
+            
+        var linkForce = d3.forceLink();
+        
+        var simulation = d3.forceSimulation()
+            .force('charge', d3.forceManyBody().strength(forceStrength))
+            .force('center', d3.forceCenter().x(centerX).y(centerY))
+            .force('link', linkForce)
+            .nodes(bioethics)
+            .on('tick', forceTick);
+        
+        simulation.force('link').links(links);
+        
+        var linkEnter = svg.appendMany(links, 'line.link')
+            .st({opacity: .5, 'stroke-width': normalLinkWidth, stroke: 'black'})
+            .on('mouseover', handleLinkHover)
+            .on('mouseout', handleLinkOut);
+        
+        var nodeEnter = svg.appendMany(bioethics, 'g.node');
+        
+        nodeEnter.append('circle')
+            .at({r: normalRadius, id: d =>  d.id})
+            .st({fill: d => color(d.tags[0]), stroke: 'black', 'stroke-width': normalNodeWidth, cursor: 'pointer'})
+            .on('mouseover', handleMouseOver)
+            .on('mouseout', handleMouseOut)
+            .on('click', handleNodeClick);        
+        
+        function forceTick(){
+            d3.selectAll('line.link')
+                .at({x1: d => d.source.x,
+                     x2: d => d.target.x,
+                     y1: d => d.source.y,
+                     y2: d => d.target.y});
+            
+            d3.selectAll('g.node')
+                .translate(d => [d.x, d.y])
+        }
+        
+        function handleMouseOver(d, i){
+            svg.select('circle#' + d.id)
+                .at({r: enlargedRadius})
+                .st({'stroke-width': enlargedNodeWidth});
+
+            tooltip.st({opacity: tooltipOpacity, left: d3.event.pageX, top: d3.event.pageY})
+                .html('<b>' + d.name + '</b>');
+            
+            linkEnter.filter(p => d.id == p.source.id || d.id == p.target.id)
+                .st({stroke: connectedLinkStroke, 'stroke-width': connectedLinkWidth});
+
+        }
+
+        function handleMouseOut(d, i){
+            svg.select('circle#' + d.id)
+                .at({r: normalRadius})
+                .st({'stroke-width': normalNodeWidth})
+
+            linkEnter.filter(p => d.id == p.source.id || d.id == p.target.id)
+                .st({stroke: normalLinkStroke, 'stroke-width': normalLinkWidth});
+            
+            tooltip.st({opacity: 0})
+        }
+        
+        function handleNodeClick(d, i){
+            var hoverHtml = `<h1><b>${d.name}</b></h1><p><span class = 'return'>Return to overview</span></p><br>${d.description}<p><i>Reference: <a href =${d.ref[0]}>${d.ref[0]}</a></i></p><p><span class = 'return'>Return to overview</span></p><br>`;
+            
+            info.st({'z-index': 2, opacity: .9, width: 1000, height: 700})
+                .select('#text')
+                .html(hoverHtml);
+            
+            d3.selectAll('.return')
+                .st({cursor: 'pointer', color: 'green'})
+                .on('click', handleReturnClick)
+                .on('mouseover', () => d3.selectAll('.return').st({color: 'black', 'font-size': 20}))
+                .on('mouseout', () => d3.selectAll('.return').st({color: 'green', 'font-size': 18}));
+
+        }
+
+        
+        function handleLinkHover(d){
+            tooltip.st({opacity: tooltipOpacity, left: d3.event.pageX, top: d3.event.pageY})
+                .html(d.description);
+            
+            d3.select(this)
+                .st({stroke: connectedLinkStroke, 'stroke-width': connectedLinkWidth})
+            
+            svg.selectAll('circle')
+                .filter(p => { return p.id == d.target.id || p.id == d.source.id})
+                .at({r: enlargedRadius})
+                .st({'stroke-width': enlargedNodeWidth});
+        }
+        
+        function handleLinkOut(d){
+            tooltip.st({opacity: 0})
+            
+            d3.select(this)
+                .st({stroke: normalLinkStroke, 'stroke-width': normalLinkWidth})
+                .lower();
+            
+            svg.selectAll('circle')
+                .at({r: normalRadius})
+                .st({'stroke-width': normalNodeWidth});
+        }
+        
+        
+        function handleReturnClick(){
+            info.st({'z-index': 0, opacity: 0, width: 0, height: 0});
+            
+            window.scrollTo(0,0)
+        }
+        
+        var drag = d3.drag();
+        drag.on('drag', dragging);
+        function dragging(d){
+            var e = d3.event;
+            d.fx = e.x;
+            d.fy = e.y;
+            if(simulation.alpha() < .1){
+                simulation.alpha(.1);
+                simulation.restart();
+            }
+        }
+        
+        d3.selectAll('g.node').call(drag)
+        
+    }
+</script>

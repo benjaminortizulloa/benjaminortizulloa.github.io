@@ -1,0 +1,532 @@
+<head>
+    <style>
+      #sections > div{
+            opacity: .3;
+        }
+        
+        #sections div.graph-scroll-active{
+            opacity: 1;
+        }
+        
+        #container{
+            position: relative;
+            overflow: auto;
+        }
+        
+        #sections{
+            width: 0;
+            float: left;
+        }
+        
+        #graph{
+            float: left;
+            left: 0px;
+        }
+        
+        #graph.graph-scroll-fixed{
+            position: fixed;
+            top: 0px;
+            left: 0;
+            margin-left: 10;
+        }
+        body{
+            background-color: whitesmoke;
+        }
+        svg{
+            background-color: none;
+            position: absolute;
+            top:0px;
+            z-index: 2;
+        }
+
+        path.line{
+            fill:none;
+            stroke: lightgrey;
+            stroke-width: 1px;
+        }
+        .annotation path{
+            stroke-width: 1;
+            stroke: black;
+            fill-opacity: .5;
+            fill: none;        }
+        
+       .annotation path.subject {
+            stroke: black;
+    /*        fill: rgba(0, 100, 244, .3); */
+           fill: none;
+        }
+        
+        .annotation path.connector-arrow,
+        .title text, .annotation text,
+        .annotation.callout.circle .annotation-subject path{
+            fill: black;
+            font-size: 13;
+        }
+        .annotation-note-bg{
+            fill: rgba(255, 255, 255, 0);
+        }
+        .annotation-note-title{
+            font-weight: bold;
+        }
+        .annotation.xythreshold{
+            cursor: move;
+        }
+        .hidden{
+            display: none;
+        }
+        text.hover{
+            font-size: .7em;
+        }
+        text.title{
+            font-size: 1.1em;
+        }        
+
+    </style>
+</head>
+<body>
+    <div id = 'container'>
+        <div id = 'sections'>
+        </div>
+        <div id = 'graph'></div>
+    </div>
+    <script src = '../libraries/d3.js'></script>
+    <script src = '../libraries/graph-scroll.js'></script>
+    <script src = '../libraries/d3-annotation.js'></script>
+    <script>
+        
+        var width = 1100,
+            height = 600,
+            margin = {
+                left: 100,
+                top: 50,
+                right: 150,
+                bottom: 50
+            },
+            animationDuration = 1500,
+            pointHW = 20;
+        
+        var data = [[1, 1, 25], [20, 10, 50], [40, 100, 100], [60, 1000, 0], [80, 10000, 0], [100, 100000, 0]]
+        
+        var index = [['.scaleLinear(good)', 10], ['.scaleLinear(bad)', 500], ['.scaleLog(good)', 1000], ['.scaleLog(bad)', 1500], ['.scaleLinear(bad_radius)', 2000], ['   ---', 2600], ['.scaleSqrt(good_radius)', 3100], ['   ---', 3600]]
+        
+        d3.select('#sections')
+            .selectAll('div')
+            .data(index.map(function(x){return x[0]}))
+            .enter().append('div')
+            .attr('height', 400)
+            .attr('id', function(d,i){return 'id'+i})
+            .html('<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>')
+        
+        var lineScaleX0 = d3.scaleLinear()
+            .range([margin.left, width - margin.right - 150])
+            .domain(d3.extent(data.map(function(x){return x[0]})));
+
+        var lineScaleX1 = d3.scaleLinear()
+            .range([margin.left, width - margin.right - 150])
+            .domain(d3.extent(data.map(function(x){return x[1]})));
+        
+        
+        var logScaleX1 = d3.scaleLog()
+            .base(10)
+            .range([margin.left, width - margin.right - 150])
+            .domain(d3.extent(data.map(function(x){return x[1]})));
+        
+        var logScaleX0 = d3.scaleLog()
+            .base(10)
+            .range([margin.left, width - margin.right - 150])
+            .domain(d3.extent(data.map(function(x){return x[0]})));
+        
+        var sqrtScaleR0 = d3.scaleSqrt()
+            .range([0, 100])
+            .domain([0, d3.max(data.map(function(x){return x[2]}))]);
+        
+        var lineScaleR0 = d3.scaleLinear()
+            .range([0,100])
+            .domain([0, d3.max(data.map(function(x){return x[2]}))])
+
+        var x_circles = d3.scaleOrdinal()
+            .range([width - margin.right - 100,  width/2 - margin.right/2, margin.left])
+            .domain([100, 50, 25])
+        
+        var bottomLineAxis0 = d3.axisBottom(lineScaleX0),
+            bottomLineAxis1 = d3.axisBottom(lineScaleX1),
+            bottomLogAxis1 = d3.axisBottom(logScaleX1),
+            bottomLogAxis0 = d3.axisBottom(logScaleX0),
+            bottomCirclesAxis = d3.axisBottom(x_circles)
+        
+        function indexMaker(){
+            svg.selectAll('text')
+                .data(index.map(function(x){return x[0]}))
+                .enter().append('text')
+                .attr('class', function(d, i){ return 'index'})
+                .style('font-size', 18)
+                .attr('x', (width-margin.right - 30))
+                .attr('y', function(d, i){return margin.top + margin.top + (i * 18) })
+                .text(function(d){ return d});
+        }
+        
+        function highlightIndex(index){
+            svg.selectAll('text.index')
+                .attr('fill-opacity', function(d, i){ return i == index ? 1 : .4})
+        }
+        
+        function textMaker(text, fontsize, x, y){
+            svg.append('g')
+                .append('text')
+                .text(text)
+                .attr('font-size', fontsize)
+                .attr('transform', 'translate(' + x + ',' + y + ')');
+        }
+        
+        function annotationMaker(message, x, y, width, height, dx, dy){
+            var annotations = [{
+                note: {label: message},
+                x: x,
+                y: y,
+                subject: {
+                    width: width,
+                    height: height
+                },
+                dx: dx,
+                dy: dy
+            }]
+            
+            var makeAnnotations = d3.annotation()
+                .type(d3.annotationCalloutRect)
+                .annotations(annotations);
+            
+            svg.append('g')
+                .attr('class', 'annotation-group')
+                .call(makeAnnotations)
+        }
+        
+        var svg = d3.select('#graph')
+            .append('svg')
+            .attr('width', width)
+            .attr('height', height);
+        
+        svg.selectAll('rect')
+            .data(data)
+            .enter().append('rect')
+            .attr('x', function(d,i){ lineScaleX0(d[0])})
+            .attr('y', 0)
+            .attr('height', 0)
+            .attr('width', 0)
+            .attr('rx', 100)
+            .attr('ry', 100)
+            .attr('fill', 'black')
+            .attr('stroke', 'black')
+
+        indexMaker();
+                
+        function okline(){
+            svg.selectAll('g')
+                .remove();
+            
+            svg.selectAll('rect')
+                .transition().duration(animationDuration)
+                .attr('x', function(d){return lineScaleX0(d[0]); })
+                .attr('y', (height/3) * 2)
+                .attr('width', pointHW)
+                .attr('height', pointHW)
+                .attr('fill', 'black')
+                .attr('fill-opacity', .33)
+                .on('end', function(d){
+                    annotationMaker('The difference in value between these two circles is 20',
+                                    lineScaleX0(data[1][0]),
+                                    ((height/3 * 2)),
+                                    (lineScaleX0(data[2][0]) - lineScaleX0(data[1][0]) + pointHW),
+                                    pointHW,
+                                    50,
+                                    -100
+                                   );
+                    annotationMaker('The difference in value between these two circles is also 20',
+                                    lineScaleX0(data[4][0]),
+                                    ((height/3 * 2)),                                    
+                                    (lineScaleX0(data[5][0]) - lineScaleX0(data[4][0]) + pointHW),
+                                    pointHW,
+                                    50, 
+                                    -100
+                                   );})
+
+            svg.append('g')
+                .attr('transform', 'translate(10,' + (height/3 * 2 + 20) + ')')
+                .call(bottomLineAxis0);
+            
+            textMaker("d3.scaleLinear()", 40, margin.left, margin.top);
+            
+            textMaker('When there are no extreme outliers in your data, then use a normal linear scale.', 20, margin.left, (margin.top * 2));
+                        
+        }
+        
+        function notokline(){
+            svg.selectAll('g')
+                .remove()
+            
+            svg.selectAll('rect')
+                .transition().duration(animationDuration)
+                .attr('x', function(d){return lineScaleX1(d[1]); })
+                .attr('y', (height/3) * 2)            
+                .attr('height', pointHW)
+                .attr('width', pointHW)
+                .attr('fill', 'black')
+                .attr('fill-opacity', .33)
+                .on('end', function(){
+                    annotationMaker('This cluster contains circles with values of 1, 10, 100, and 1000. Can you tell them apart?',
+                                   lineScaleX1(data[0][1]),
+                                   ((height/3 * 2)),
+                                   (lineScaleX1(data[3][1]) - lineScaleX1(data[0][1]) + pointHW),
+                                   pointHW,
+                                   50,
+                                   -100
+                                  );})
+            
+            svg.append('g')
+                .attr('transform', 'translate(10,' + (height/3 * 2 + 20) + ')')
+                .call(bottomLineAxis1)
+            
+            textMaker('d3.scaleLinear()', 40, margin.left, margin.top);
+            
+            textMaker('However, when there is an extreme outlier the rest of the data are clustered together on the scale and ', 20, margin.left, (margin.top*2));
+            
+            textMaker('become difficult to differentiate.', 20, margin.left, (margin.top * 2.5));
+            
+        }
+        
+        function oklog(){
+            svg.selectAll('g')
+                .remove();
+            
+            svg.selectAll('rect')
+                .transition().duration(animationDuration)
+                .attr('x', function(d){return logScaleX1(d[1]); })
+                .attr('y', (height/3) * 2)
+                .attr('width', pointHW)
+                .attr('height', pointHW)
+                .attr('fill', 'black')
+                .attr('fill-opacity', .33)
+                .on('end', function(){
+                    annotationMaker('The difference in value between these two circles is 9',
+                                    (logScaleX1(data[0][1])),
+                                    ((height/3 * 2)),
+                                    (logScaleX1(data[1][1]) - logScaleX1(data[0][1]) + pointHW),
+                                    pointHW,
+                                    50, 
+                                    -100);
+                    annotationMaker('The difference in value between these two circles is 900',
+                                    (logScaleX1(data[2][1])),
+                                    ((height/3 * 2)),
+                                    (logScaleX1(data[3][1]) - logScaleX1(data[2][1]) + pointHW),
+                                    pointHW,
+                                    50, 
+                                    -100);
+                    annotationMaker('The difference in value between these two circles is 90,000',
+                                    (logScaleX1(data[4][1])),
+                                    ((height/3 * 2)),
+                                    (logScaleX1(data[5][1]) - logScaleX1(data[4][1]) + pointHW),
+                                    pointHW,
+                                    50, 
+                                    -100);});
+            
+            svg.append('g')
+                .attr('transform', 'translate(10,' + (height/3 * 2 + 20) + ')')
+                .call(bottomLogAxis1);
+          
+            textMaker('d3.scaleLog().base(10)', 40, margin.left, margin.top);
+            
+            textMaker('If you have an extreme outlier, and you want to differentiate the rest of the data, then you want to use ', 20, margin.left, (margin.top * 2));
+            
+            textMaker('a log scale.', 20, margin.left, (margin.top * 2.5));            
+        }
+        
+        function notoklog(){
+            svg.selectAll('g')
+                .remove()
+            
+            svg.selectAll('rect')
+                .transition().duration(animationDuration)
+                .attr('x', function(d){return logScaleX0(d[0]); })
+                .attr('y', (height/3) * 2)            
+                .attr('width', pointHW)
+                .attr('height', pointHW)
+                .attr('fill', 'black')
+                .attr('fill-opacity', .33)
+                .on('end', function(){
+                    annotationMaker('The difference in value between these two circles is 20', 
+                                    (logScaleX0(data[0][0])),
+                                    ((height/3 * 2)),                                    
+                                    (logScaleX0(data[1][0]) - logScaleX0(data[0][0]) + pointHW),
+                                    pointHW,
+                                    150,
+                                    -100
+                                   );
+
+                    annotationMaker('The difference in value between these two circles is also 20',
+                                    (logScaleX0(data[4][0])),
+                                    ((height/3 * 2)),                                    
+                                    (logScaleX0(data[5][0]) - logScaleX0(data[4][0]) + pointHW),
+                                    pointHW,
+                                    25,
+                                    -100
+                                   );});
+            
+            svg.append('g')
+                .attr('transform', 'translate(10,' + (height/3 * 2 + 20) + ')')
+                .call(bottomLogAxis0);
+            
+            textMaker('d3.scaleLog().base(10)', 40, margin.left, margin.top);
+            
+            textMaker('The magnitude represented by a space or tick on the upper end of a log scale is exponentially greater ', 20, margin.left, (margin.top * 2));
+            
+            textMaker('than the magnitude represented by a space or a tick on the lower end of a log scale. So it', 20, margin.left, (margin.top * 2.5));
+            
+            textMaker('really only makes sense to use the log scale when there is a really large gap in the data.', 20, margin.left, (margin.top * 3));
+            
+        }
+        
+        function notokradius(){
+            svg.selectAll('g')
+                .remove()
+            
+            svg.selectAll('rect')
+                .transition().duration(animationDuration)
+                .attr('x', function(d){return  x_circles(d[2]) - ( lineScaleR0(d[2])) ;})
+                .attr('y', function(d){return  (height - margin.bottom) - (2 * lineScaleR0(d[2]))})
+                .attr('width', function(d){return  2 * lineScaleR0(d[2])})
+                .attr('height', function(d){return  2 * lineScaleR0(d[2])})
+                .attr('fill', 'black')
+                .attr('fill-opacity', .33)
+                .attr('rx', 100)
+                .attr('ry', 100)
+            
+            svg.append('g')
+                .attr('transform', 'translate(0,' + (height-margin.bottom) + ')')
+                .call(bottomCirclesAxis)
+            
+            textMaker('d3.scaleLinear()', 40, margin.left, margin.top);
+            
+            textMaker("When adjusting the radius of a circle according to data, you should not use a linear scale. This is ", 20, margin.left, (margin.top * 2));
+            
+            textMaker('because the area of a circle is proportional to the square of the radius. A circle representing a data', 20, margin.left, (margin.top * 2.5));
+            
+            textMaker('point that is only 2x the magnitude of another, will actually have 4x the area', 20, margin.left, (margin.top * 3));
+                
+        }
+        
+        function okradius(){
+            svg.selectAll('g')
+                .remove()
+                        
+            svg.selectAll('rect')
+                .transition().duration(animationDuration)
+                .attr('x', function(d){return  x_circles(d[2]) - (sqrtScaleR0(d[2])) ;})
+                .attr('y', function(d){return (height - margin.bottom) - (2 * sqrtScaleR0(d[2]))})
+                .attr('width', function(d){return 2 * sqrtScaleR0(d[2])})
+                .attr('height', function(d){ return 2 * sqrtScaleR0(d[2])})
+                .attr('fill', 'black')
+                .attr('fill-opacity', .33)
+                .attr('rx', 100)
+                .attr('ry', 100);
+            
+            svg.append('g')
+                .attr('transform', 'translate(0,' + (height-margin.bottom) + ')')
+                .call(bottomCirclesAxis);     
+            
+            textMaker('d3.scaleSqrt()', 40, margin.left, margin.top);
+            
+            textMaker("In order to create circles with areas that are proportional to the data, we need to create radii", 20, margin.left, (margin.top * 2));
+           
+            textMaker("using a square root scale.", 20, margin.left, (margin.top * 2.5));
+        }
+        
+        function okcircle2square(){
+            svg.selectAll('g')
+                .remove()
+            
+            svg.selectAll('.annotation-group')
+                .remove()
+            
+            svg.selectAll('rect')
+                .transition().duration(animationDuration)
+                .attr('x', function(d){return x_circles(d[2]) - (Math.sqrt(Math.PI * (sqrtScaleR0(d[2]) **2))/2) ;})
+                .attr('y', function(d){return (height - margin.bottom) - Math.sqrt(Math.PI * (sqrtScaleR0(d[2]) **2))})
+                .attr('width', function(d){return Math.sqrt(Math.PI * (sqrtScaleR0(d[2]) **2))})
+                .attr('height', function(d){return Math.sqrt(Math.PI * (sqrtScaleR0(d[2]) **2))})
+                .attr('fill', 'black')
+                .attr('fill-opacity', .33)
+                .attr('rx', 0)
+                .attr('ry', 0);
+            
+            svg.selectAll('rect')
+                .transition().delay(animationDuration).duration(animationDuration)
+                .attr('x', function(d){return d[2] == 25 ? x_circles(100) -  (Math.sqrt(Math.PI * (sqrtScaleR0(100) **2))/2)  : x_circles(d[2]) - (Math.sqrt(Math.PI * (sqrtScaleR0(d[2]) **2))/2)});
+
+            svg.append('g')
+                .attr('transform', 'translate(0,' + (height-margin.bottom) + ')')
+                .call(bottomCirclesAxis);
+            
+            textMaker('d3.scaleSqrt()', 40, margin.left, margin.top);
+
+            textMaker("Here we convert the circles to squares to show the improved effect using a square root scale has", 20, margin.left, (margin.top * 2));
+            
+            textMaker("on a circle's area.", 20, margin.left, (margin.top * 2.5))
+            
+        }
+        
+        function notokcircle2square(){
+            svg.selectAll('g')
+                .remove()
+            
+            svg.selectAll('rect')
+                .transition().duration(animationDuration)
+                .attr('x', function(d){return  x_circles(d[2]) - (Math.sqrt(Math.PI * (lineScaleR0(d[2]) **2))/2) ;})
+                .attr('y', function(d){return (height - margin.bottom) - Math.sqrt(Math.PI * (lineScaleR0(d[2]) **2))})
+                .attr('width', function(d){return  Math.sqrt(Math.PI * (lineScaleR0(d[2]) **2))})
+                .attr('height', function(d){return  Math.sqrt(Math.PI * (lineScaleR0(d[2]) **2))})
+                .attr('rx', 0)
+                .attr('ry', 0)
+                .attr('fill', 'black')
+                .attr('fill-opacity', .33)
+            
+            svg.selectAll('rect')
+                .transition().duration(animationDuration).delay(animationDuration)
+                .attr('x', function(d){return d[2] == 25 ? x_circles(50) - (Math.sqrt(Math.PI * (lineScaleR0(50) **2))/2)  : x_circles(d[2]) - (Math.sqrt(Math.PI * (lineScaleR0(d[2]) **2))/2)})
+
+            svg.selectAll('rect')
+                .transition().duration(animationDuration).delay(animationDuration * 2)
+                .attr('x', function(d){return d[2] == 25 || d[2] == 50 ? x_circles(100) - (Math.sqrt(Math.PI * (lineScaleR0(100) **2))/2): x_circles(d[2]) - (Math.sqrt(Math.PI * (lineScaleR0(d[2]) **2))/2)})
+            
+            svg.append('g')
+                .attr('transform', 'translate(0,' + (height-margin.bottom) + ')')
+                .call(bottomCirclesAxis)    
+            
+            textMaker('d3.scaleLinear()', 40, margin.left, margin.top);
+            
+            textMaker("If we create squares with the same volume as the circles, then it is easier to see the problem with", 20, margin.left, (margin.top * 2)); 
+            
+            textMaker("using a linear scale for creating a circle's radius.", 20, margin.left, (margin.top * 2.5));
+        }
+        
+        scrollFunctions = [
+            okline, 
+            notokline, 
+            oklog, 
+            notoklog, 
+            notokradius, 
+            notokcircle2square,
+            okradius, 
+            okcircle2square
+            
+        ]
+        
+        var gs = d3.graphScroll()
+                .container(d3.select('#container'))
+                .graph(d3.selectAll('#graph'))
+                .sections(d3.selectAll('#sections > div'))
+                .on('active', function(i){
+                    scrollFunctions[i]()
+                    highlightIndex(i)
+                })
+        
+    </script>
+</body>
