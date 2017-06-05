@@ -75,14 +75,30 @@
     
     d3.selectAll('.demo')
         .st({cursor: 'pointer', color: 'green'})
-        .on('mouseover', () => d3.selectAll('.demo').st({color: 'black', 'font-size': 20}))
-        .on('mouseout', () => d3.selectAll('.demo').st({color: 'green', 'font-size': 18}))
-        .on('click', () => {d3.json('../data/bioethics.json', network); window.scrollTo(0, 0)});
+        .on('mouseover', handleDemoOver)
+        .on('mouseout', handleDemoOut)
+        .on('click', handleDemoClick);
+    
+    function handleDemoOver(){
+        d3.selectAll('.demo')
+            .st({color: 'black', 'font-size': 20});
+    }
+    
+    function handleDemoOut(){
+        d3.selectAll('.demo')
+            .st({color: 'green', 'font-size': 18});
+    }
+    
+    function handleDemoClick(){
+        d3.json('../data/bioethics.json', network); 
+        window.scrollTo(0, 0);
+    }
+    
     
     function network(data){
         var bioethics = data.nodes;
         var links = data.links;
-        var nodeHash = bioethics.reduce((hash, node) => {hash[node.id] = node; return hash}, {});
+        var nodeHash = bioethics.reduce(function(hash, node){hash[node.id] = node; return hash}, {});
         var normalRadius = 10,
             enlargedRadius = 15,
             normalNodeWidth = 1,
@@ -142,7 +158,7 @@
                      y2: d => d.target.y});
             
             d3.selectAll('g.node')
-                .translate(d => [d.x, d.y])
+                .translate(function(d){return [d.x, d.y]})
         }
         
         function handleMouseOver(d, i){
@@ -170,7 +186,7 @@
         }
         
         function handleNodeClick(d, i){
-            var hoverHtml = `<h1><b>${d.name}</b></h1><p><span class = 'return'>Return to overview</span></p><br>${d.description}<p><i>Reference: <a href =${d.ref[0]}>${d.ref[0]}</a></i></p><p><span class = 'return'>Return to overview</span></p><br>`;
+            var hoverHtml = "<h1><b>" + d.name + "</b></h1><p><span class = 'return'>Return to overview</span></p><br>"+d.description+ "<p><i>Reference: <a href =" + d.ref[0] + ">" +d.ref[0] + "</a></i></p><p><span class = 'return'>Return to overview</span></p><br>";
             
             info.st({'z-index': 2, opacity: .9, width: 1000, height: 700})
                 .select('#text')
@@ -193,7 +209,7 @@
                 .st({stroke: connectedLinkStroke, 'stroke-width': connectedLinkWidth})
             
             svg.selectAll('circle')
-                .filter(p => { return p.id == d.target.id || p.id == d.source.id})
+                .filter(function(p){ return p.id == d.target.id || p.id == d.source.id})
                 .at({r: enlargedRadius})
                 .st({'stroke-width': enlargedNodeWidth});
         }
@@ -214,10 +230,11 @@
         function handleReturnClick(){
             info.st({'z-index': 0, opacity: 0, width: 0, height: 0});
             
-            window.scrollTo(0,0)
+            window.scrollTo(0,0);
         }
         
         var drag = d3.drag();
+        
         drag.on('drag', dragging);
         function dragging(d){
             var e = d3.event;

@@ -22,7 +22,7 @@
 <script>
     var pages = [
         {title: "2015 TIMSS Math", description: "An attempt to visualize the 2015 TIMSS math assesment using D3. The visualization involves more than 7,000 different data points and compares questions at both an international and national scale.", link: "timss_2015_math_questions"},
-        {title: "2014 TIMSS Math", description: "An exploration of the 2011 TIMSS math assesment using R. The report shows the process used to clean data and protype visualizations.", link: "Visualizing_2011_TIMSS"}, 
+        {title: "2011 TIMSS Math", description: "An exploration of the 2011 TIMSS math assesment using R. The report shows the process used to clean data and protype visualizations.", link: "Visualizing_2011_TIMSS"}, 
         {title: "An Intro to Fractals", description: "An scrollstory explaining the concept of self-similar fractals. The scrollstory uses both canvas and D3.", link: "fractals"}, 
         {title: "One Laptop per Child", description: "A D3 makeover challenge hosted by Curran Kelleher. I recreated the original chart as an interactive scrollstory.", link: "d3mo1"}, 
         {title: "D3 Scale Primer", description: "A primer on when to use a log scale and how to scale the area of a circle.", link: "scale_primer"}, 
@@ -40,15 +40,16 @@
         .st({'z-index': 0, 
              position: 'absolute'})
         .append('img')
-        .at({src: d => 'images/' + d.link + '.png', 
-             alt: d => d.title, id: d => d.link})
+        .at({src: function(d){return 'images/' + d.link + '.png'}, 
+             alt: function(d){return d.title },
+             id: function(d){return d.link }})
         .st({width: thumbSize[0], 
              height: thumbSize[1]});
     
     portfolioThumbs.append('a')
-        .at({href: d => 'pages/' + d.link + '.html'})
+        .at({href: function(d){return 'pages/' + d.link + '.html'}})
         .append('div')
-        .at({id: d => 'text'+d.link, 
+        .at({id: function(d){return 'text'+d.link }, 
              class: 'text'})
         .st({'z-index': 1,
              'background-color': 'black',
@@ -60,8 +61,21 @@
              opacity: 0,
              'font-size': 16
             })
-        .on('mouseover', d => d3.select('#text' + d.link).st({opacity: 1}))
-        .on('mouseout', () => d3.selectAll('.text').st({opacity: 0}))
-        .html(d => `<h2><b>${d.title}</b></h2><p> ${d.description}</p>`)
+        .on('mouseover', handleMouseOver)
+        .on('mouseout', handleMouseOut)
+        .html(function(d){return "<h2><b>" + d.title + "</b></h2><p>" + d.description + "</p>"})
+
+    
+    function handleMouseOver(d){
+        d3.select('#text' + d.link)
+            .st({opacity: 1});
+    }
+    
+    function handleMouseOut(){
+        d3.selectAll('.text')
+            .st({opacity: 0});
+    }
+    
+        
         
 </script>
