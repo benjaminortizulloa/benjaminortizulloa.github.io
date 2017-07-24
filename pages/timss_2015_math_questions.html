@@ -52,6 +52,7 @@
             <li>The right panel displays question data specific to a country and is organized by national success rate and gender dominance. National success rate is the percentage of students given who successfully answered a question. Gender dominance is calculated by the percentage of total males who successfully answered a question subtracted by the percentage of total females who successfully answered a question. A country can be displayed by clicking on the country's abreviation on the bottom axis of left panel.</li>
         </ul>
         <p>While there are a total of 57 different countries that participated in TIMSS during 2015, I chose to visualize only the 34 countries that also participated in the 2011 assesment. There are a total of 7306 different datapoints on display at any given time. It would be difficult to display such a large amount of information on a static chart. While a lot of information can actually be discovered by simply looking at the color, shape, and positional encodings in the chart, even more information can be gained by hovering over a datapoint and seeing how a question compares internationally.</p>
+        <p>For an alternative representation of the data, please click on the 'Small Multiples' button. If you would like some guidance on how to interact with the visualization, then please click on the '???' button.</p>
         <p>There is a lot of information here. Please take your time and enjoy exploring through the data.</p>
         <h1>2015 TIMSS: International Comparison of Math Questions</h1>
     </div>
@@ -998,7 +999,9 @@
                         .at({width: domain_width, height: domain_height, 
                              x: function(d){return sm_content_domain(d.content_domain)},
                              y: function(d){return sm_cognitive_domain(d.cognitive_domain)}})
-                        .st({stroke: 'white', 'fill-opacity': .5, fill: function(d){return rank_color(+d.mean_rank)}}); 
+                        .st({stroke: 'white', 
+                             'fill-opacity': 1, 
+                             fill: function(d){return rank_color(+d.mean_rank)}}); 
 
                     sm_countries.append('text.countries')
                         .translate([country_width/2, country_height/4 - margin.gap])
