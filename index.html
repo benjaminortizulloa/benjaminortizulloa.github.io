@@ -3,7 +3,7 @@
         .thumbs{
             float: left;
         }
-        
+
         .text{
             overflow: auto;
         }
@@ -22,41 +22,42 @@
 <script>
     var pages = [
         {title: "2015 TIMSS Math", description: "An attempt to visualize the 2015 TIMSS math assesment using D3. The visualization involves more than 7,000 different data points and compares questions at both an international and national scale.", link: "timss_2015_math_questions"},
-        {title: "2011 TIMSS Math", description: "An exploration of the 2011 TIMSS math assesment using R. The report shows the process used to clean data and protype visualizations.", link: "Visualizing_2011_TIMSS"}, 
-        {title: "An Intro to Fractals", description: "An scrollstory explaining the concept of self-similar fractals. The scrollstory uses both canvas and D3.", link: "fractals"}, 
-        {title: "One Laptop per Child", description: "A D3 makeover challenge hosted by Curran Kelleher. I recreated the original chart as an interactive scrollstory.", link: "d3mo1"}, 
-        {title: "D3 Scale Primer", description: "A primer on when to use a log scale and how to scale the area of a circle.", link: "scale_primer"}, 
+        {title: "2011 TIMSS Math", description: "An exploration of the 2011 TIMSS math assesment using R. The report shows the process used to clean data and protype visualizations.", link: "Visualizing_2011_TIMSS"},
+        {title: 'My Foggy Map', description: 'A personal reinterpretation of Dylan Moriarity\'s Foggy Spaces using the osmplotr package.', link: 'foggy_spaces_osmplotr_1'},
+        {title: "An Intro to Fractals", description: "An scrollstory explaining the concept of self-similar fractals. The scrollstory uses both canvas and D3.", link: "fractals"},
+        {title: "One Laptop per Child", description: "A D3 makeover challenge hosted by Curran Kelleher. I recreated the original chart as an interactive scrollstory.", link: "d3mo1"},
+        {title: "D3 Scale Primer", description: "A primer on when to use a log scale and how to scale the area of a circle.", link: "scale_primer"},
         {title: "Bioethics Network Graph", description: "An attempt to show how a force network diagram can be used by teachers and professors to better engage their students. Serves as a prototype and still needs to be filled with information.", link: "bioethics_primer"}];
-    
+
     var thumbSize = [400, 200]
     var portfolioThumbs = d3.select('body')
         .appendMany(pages, 'div.thumbs')
-        .st({width: thumbSize[0], 
+        .st({width: thumbSize[0],
              height: thumbSize[1],
              margin: 10
             });
-    
+
     portfolioThumbs.append('div')
-        .st({'z-index': 0, 
+        .st({'z-index': 0,
              position: 'absolute'})
         .append('img')
-        .at({src: function(d){return 'images/' + d.link + '.png'}, 
+        .at({src: function(d){return 'images/' + d.link + '.png'},
              alt: function(d){return d.title },
              id: function(d){return d.link }})
-        .st({width: thumbSize[0], 
+        .st({width: thumbSize[0],
              height: thumbSize[1]});
-    
+
     portfolioThumbs.append('a')
         .at({href: function(d){return 'pages/' + d.link + '.html'}})
         .append('div')
-        .at({id: function(d){return 'text'+d.link }, 
+        .at({id: function(d){return 'text'+d.link },
              class: 'text'})
         .st({'z-index': 1,
              'background-color': 'black',
              color: 'white',
              'text-align': 'center',
              width: thumbSize[0],
-             height: thumbSize[1], 
+             height: thumbSize[1],
              position: 'relative',
              opacity: 0,
              'font-size': 16
@@ -65,17 +66,17 @@
         .on('mouseout', handleMouseOut)
         .html(function(d){return "<h2><b>" + d.title + "</b></h2><p>" + d.description + "</p>"})
 
-    
+
     function handleMouseOver(d){
         d3.select('#text' + d.link)
             .st({opacity: 1});
     }
-    
+
     function handleMouseOut(){
         d3.selectAll('.text')
             .st({opacity: 0});
     }
-    
-        
-        
+
+
+
 </script>
