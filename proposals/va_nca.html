@@ -92,7 +92,7 @@
 	obNode = d3.select('#obolisk').node().getBBox()
 	obolisk.translate([-obNode.width*2, -obNode.height])
 	
-	stateList = ['All','AF','AK','AL','AR','AS','AZ','CA','CO','CT','data is lost','DC','DE','FL','GA','GU','HI','IA','ID','IL','IN','KS','KY','LA','MA','MD','ME','MI','MN','MO','MP','MS','MT','NC','ND','NE','NH','NJ','NM','NV','NY','OH','OK','OR','PA','PR','RI','SC','SD','TN','TX','UT','VA','VI','VT','WA','WI','WV','WY']
+	stateList = ['All','AK','AL','AR','AZ','CA','CO','CT','data is lost','DC','FL','GA','GU','HI','IA','ID','IL','IN','KS','KY','LA','MA','MD','ME','MI','MN','MO','MP','MS','MT','NC','ND','NE','NH','NJ','NM','NV','NY','OH','OK','OR','PA','PR','RI','SC','SD','TN','TX','UT','VA','VI','VT','WA','WI','WV','WY']
 	
 	d3.select('div.filter')
 		.append('label')
@@ -301,11 +301,11 @@
 	
 	transition2011text = ["Let's take a look", "at those who fell", "in 2011"];
 	
-	chinooktext = ['We can also search for', 'those who fell on a specific date.', "Let's search for those heros", "who fell on August 6th, 2011"]
+	chinooktext = ['We can also search for', 'those who fell on a specific date.', "Let's search for those heroes", "who fell on August 6th, 2011"]
 	
 	chinookExplainedText = ['The flags that turned gold', 'represent those who fell', 'on August 6th, 2011', 'which is the date', 'that a chinook helicopter', 'was shot down', 'and killed 30 of our soldiers']
 	
-	buriedText = ['These fallen heros', 'are buried in different cemeteries', 'and this application', 'is one way', 'to remember them together']
+	buriedText = ['These fallen heroes', 'are buried in different cemeteries', 'and this application', 'is one way', 'to remember them together']
 	
 	exploreText = ['You can learn more about each soldier', 'by hovering over his or her flag', '', 'You can filter the cemetery', 'by using the selections', 'at the bottom']
 	
@@ -380,7 +380,7 @@
 			d3.selectAll('.death_20110806')
 				.transition()
 				.duration(1000)
-				.style('fill', 'gold')
+				.at({stroke: 'black', fill: 'gold'})
 		}})
 //		.to(chinookh1.nodes(), 2, {opacity: 0, y: -100})
 //		.to('svg#cemetery', 1, {opacity: 1})
