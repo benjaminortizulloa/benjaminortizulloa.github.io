@@ -1,0 +1,538 @@
+---
+title: 'Playing With Graphs 5: Surveys'
+author: "Benjamin Ortiz Ulloa"
+date: "January 20, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+packages <- c('tidyverse', 'stringr', 'igraph', 'diagram', 'tinkR')
+sapply(packages, library, character.only = T)
+g <- read_graph("../../data/data_vis_survey.graphml", 'graphml')
+```
+
+# Introduction
+
+Today we're going to explore survey data as if it were a graph. This exploration was inspired by a talk that [**Ed Finkler** provided at Nodevember 2016](https://www.youtube.com/watch?v=GekQqFZm7mA). The schema uses the following logic: There are **People**, there are **Answers**, and those two things are connected by **questions**.
+
+
+```{r schema, echo = F}
+my_edge_length <- .09
+my_text_size <- 1.3
+openplotmat()
+pos <- coordinates(c(3))
+question <- straightarrow(from = pos[1,], to = pos[3,])
+text(question[1], question[2]+ .05, 'Questions')
+textellipse(mid = pos[1,], radx = my_edge_length, lab = 'People', box.col = 'lightgrey')
+textellipse(mid = pos[3,], radx = my_edge_length, lab = 'Answers', box.col = 'orange')
+title('Data Viz Survey Schema')
+```
+
+The two questions I want to answer by exploring this graph is:
+
+1. What can we learn from the people who spend less than 5% of their time on data visualization, but claim that data visualization is a primary focus of their work? (Inspired by Shirley Wu's closing comments in [655 Frustrations Doing Data Visualization](https://medium.com/visualizing-the-field/655-frustrations-doing-data-visualization-e1087c8176fc))
+2. Who are people similar to me in the data viz community?
+
+# Setup
+
+## Packages
+
+The packages we will need are **Tidyverse**, **stringr**, and **igraph**. I added the [igraph helper functions from my last post](./playing_with_graphs_4.html) to my package [tinkR](https://github.com/beemyfriend/tinkR). 
+
+```{R loadPackages, eval = F}
+packages <- c('tidyverse', 'stringr', 'igraph', 'tinkR')
+sapply(packages, library, character.only = T)
+```
+
+## Data
+
+The original data can be found in [Elijah Meeks github repository](https://github.com/emeeks/data_visualization_survey/tree/master/data). However, because we will work with a different version of the same dataset. I took the liberty and "graph-it-ized" (or "net-worked", or "node-and-edgitized") the csv so we can explore the survey results as we would a graph database.  You can find the "graph-ee-teed" dataset [in my github repository](https://github.com/beemyfriend/beemyfriend.github.io/blob/master/Data/data_vis_survey.graphml)
+
+
+```{R loadData, eval = F}
+g <- read_graph("Data/data_vis_survey.graphml", 'graphml')
+```
+
+
+# Test Example
+
+Before we dive into the graph, we should try out a test case to see if we understand the traversal logic.. While I did not take the survey, I do have answers for the questions on the survey. One of the questions on the survey is "What technologies do you use to visualize data?". The tech I use are:
+
++ D3
++ Other Javascript
++ Other R
++ Inkscape
++ ggplot
++ Javascript
++ JavaScript
++ R Shiny
++ R
+
+I want to know:
+
+1. How many people use each of those technologies?
+2. Who are the individuals using most of these technologies? (Who has a similar stack as me?)
+
+
+```{r tExample}
+#I want to know who gave the same answers as I did for a question
+same_answers <- g %>%
+  #find all edges
+  E() %>%
+  #filter edges that represent the question i'm interested in
+  .[type == 'What technologies do you use to visualize data?'] %>%
+  #create a subgraph from those edges
+  reverse_subgraph_edges(g) %>%
+  #save the subgraph for future reference
+  save_as('question_net') %>%
+  #find all edges of the subgraph
+  E() %>%
+  #filter edges that point towards my answers
+  .[V(question_net) %->% V(question_net)[names(V(question_net)) %in% c("D3", 
+                                                                       "Other Javascript", 
+                                                                       "Other R", 
+                                                                       "Inkscape", 
+                                                                       "ggplot", 
+                                                                       'Javascript',
+                                                                       "JavaScript", 
+                                                                       "R Shiny", 
+                                                                       "R")]] %>%
+  #produce a graph of people who gave the same answers as me
+  reverse_subgraph_edges(question_net)
+```
+
+Let's see which one of my answers is the most common within the data visualization community.
+
+```{r testDegree}
+same_answers %>%
+  #find the number of 'in' edges each node has
+  #only answers in this graph have 'in' edges
+  degree(mode = 'in') %>%
+  #because people don't have 'in' edges they get a degree of 0
+  .[. > 0] %>%
+  #let's sort the results for cleanliness
+  sort(T)
+```
+
+Just as a reference, let's take a look at the ten most popular technologies:
+
+```{r mostPopularTech}
+#we created question_net when we created same_answers
+#created has all the unfiltered
+#'What technologies do you use to visualize data?' edges
+question_net %>%
+  degree(mode = 'in') %>%
+  .[.>0] %>%
+  sort(T) %>%
+  head(10)
+```
+
+Now, let's see if anyone uses all or most of these technologies:
+
+```{r testDegreePeople}
+same_answers %>%
+  #find the number of 'out' edges each node has
+  #only people in this graph have 'out' edges
+  degree(mode = 'out') %>%
+  .[.>0] %>%
+  sort(T) %>%
+  head()
+```
+
+It seems that person **id: 128** has a similar stack as me. Let's confirm this:
+
+```{r id128}
+question_net %>%
+  E() %>%
+  .[V(question_net)[names(V(question_net)) == 'id: 128'] %->% V(question_net)] %>%
+  reverse_subgraph_edges(question_net) %>%
+  plot() 
+title("id: 128's Tech Stack")
+
+```
+
+The person who is most similar to me seems to use **GIS** software and **C3**. Maybe I should look into developing those skills as well. 
+
+I'm also curious, what does this person do for work?
+
+```{r id128Werk}
+#start with unfiltered net
+g %>%
+  E() %>%
+  .[V(g)[names(V(g)) == 'id: 128'] %->% V(g)] %>%
+  .[type == "What is your official job title?"] %>%
+  reverse_subgraph_edges(g) %>%
+  plot()
+title("id: 128's Job")
+```
+
+Looking forward, we can identify a few patterns that we will need to use over and over again. Whenever we see a pattern with our code, we should wrap that pattern into a function to save us time typing and to prevent typos...let's try to keep our code DRY.
+
+```{r getSameAnswers}
+#Creates a subgraph of people who answered a question a certain way
+getSameAnswers <- function(graph, question, answerVect){
+  graph %>%
+    E() %>%
+    .[type == question] %>%
+    reverse_subgraph_edges(graph) %>%
+    save_as('question_net') %>%
+    E() %>%
+    .[V(question_net) %->% V(question_net)[names(V(question_net)) %in% answerVect]] %>%
+    reverse_subgraph_edges(question_net)
+}
+
+#Get all the answers to a particular question
+whatTheySaid <- function(g, question){
+  g %>%
+    E() %>%
+    .[type == question] %>%
+    reverse_subgraph_edges(g) %>%
+    degree(mode = 'in') %>%
+    .[.> 0] %>%
+    sort(T)
+}
+```
+
+# Shirley's question
+
+```
+I just want to know, those that replied <5% time spent on visualization, but also answered that it was their primary focus…how does that even 🤔?
+```
+
+
+How can we try to make sense of people who spend less than 5% of their time on visualization but claiim that it is their primary focus? We have a lot of information at our disposal, but not all of it is useful in answering this question. I propose that we try to find out the following information:
+
+1. What is their job? (maybe their job description can give us hints)
+2. How long have they been in data viz? (Maybe they have seniority roles and have different responsibiilities)
+3. How much time do they spend on other tasks? (Data prep, while not necessarily data viz, is a fundamental task)
+
+We can answer these questions after we identify the people of interest:
+
+```{r sxywuQ}
+#identify those who spend less than 5% of their time on dataviz
+lt5_dv <- getSameAnswers(g, 
+               "Percent of your day focused on creating/implementing/productizing data visualizations?",
+               as.character(0:5) ) %>%
+  V() %>%
+  .[type == 'person'] %>%
+  names()
+
+#identify those whose primary focus is data viz
+pfocus <- getSameAnswers(g,
+                         "What focus is data visualization in your work?",
+                         "Data visualization is the focus of my job") %>%
+  V() %>%
+  .[type == 'person'] %>%
+  names()
+
+# create a network of people that identify
+# data viz as their primary focus
+# AND spend les than 5% of their tie doing daa viz
+dataViz_atrophy <- lt5_dv %>% 
+  .[. %in% pfocus] %>%
+  reverse_ego(g) %>%
+  unlist %>%
+  names() %>% 
+  unique %>%
+  reverse_induced_subgraph(g)
+```
+
+
+Let's filter the network we created to include only questions that we think will help us understand the people of interest better. 
+
+
+```{r questionsOfInterest}
+questionsOfInterest <- c(
+  "What is your official job title?",
+  "How many years have you been doing data visualization?",
+  "Percent of your day focused on data engineering?",
+  "Percent of your day focused on data science?",
+  "Percent of your day focused on design?",
+  "Percent of your day focused on data prep work?"
+)
+
+dataViz_atrophy_answers <- questionsOfInterest %>%
+  lapply(function(x){
+    q = x
+    a = whatTheySaid(dataViz_atrophy, x)
+    list(question = q, answer = a)
+  })
+
+names(dataViz_atrophy_answers) <- sapply(dataViz_atrophy_answers, function(x){x$question})
+
+dataViz_atrophy_answers <- lapply(dataViz_atrophy_answers, function(x){
+  x$answer
+}) 
+
+dataViz_atrophy_answers
+```
+
+
+We have both a Professor and a consultant in this group. They probably spend most of their time in the classroom or in meetings. All but one person in this group have at least 7 years of experience so they could potentially have enough seniority to guide others in data visualization and work on more top-level things rather than the actual craft of data visualization. One person actually spends most of his/her time on design, which brings up a good question -- is data engineering and design not part of the process of "creating/implementing/productizing data visualizations"? Is data visualization not data science?
+
+
+You may have noticed that we are looking at summary statistics of these answers. This is necessary once we start looking at answers provided by larger groups of people. Unfortunatley, whenever we use summary statistics, we lose a lot of important information. For instances, the above summary does not actually let us know who said what. Just for fun, and because the network is small, let's create an edge list for each individual of interest:
+
+
+```{r lt5}
+dataViz_atrophy %>%
+  V() %>%
+  .[type == 'person'] %>%
+  reverse_ego(dataViz_atrophy) %>%
+  lapply(function(x){
+    x %>% 
+      names() %>%
+      reverse_induced_subgraph(dataViz_atrophy) %>%
+      save_as('individualOfInterest') %>%
+      E() %>%
+      .[type %in% questionsOfInterest] %>%
+      save_as('questionEdge') %>%
+      reverse_subgraph_edges(individualOfInterest) %>%
+      ends(E(.)) %>%
+      as.tibble() %>%
+      rename(person = V1,
+             answer = V2) %>%
+      mutate(question = questionEdge$type) %>%
+      select(person, question, answer)  %>%
+      arrange(question) %>%
+      knitr::kable()
+  })
+```
+
+
+# Finding myself within the community
+
+
+Traversing a graph lends itself to being a pretty good recommendation system. To test this out, we will try to find people like me within the community. I did not take the survey myself. Below is a tibble with some of my answers to the survey questions. We will use this tibble to find people who answered the same quesions like I did. 
+
+
+```{r myAnswers, results='hide'}
+my_survey_responses <- tibble(
+  questions = c(
+    "What's your employment status",
+    "How many years have you been doing data visualization?",
+    "Is your total compensation in-line with Software Engineers and UX/UI/Designer roles at your level?",
+    "Where do you live?",
+    "How did you learn to create data visualization?",
+    "Is this your first job doing data visualization?",
+    "What is your educational background?",
+    "What’s your ethnicity?",
+    "What focus is data visualization in your work?",
+    "Do you want to spend more time or less time visualizing data in the future?",
+    "Age",
+    "The organization you work for is in which of the following?",
+    "Gender",
+    "What technologies do you use to visualize data?",
+    "Did you set out to work in data visualization or did you fall into it?"
+  ),
+  answers = list(
+    c("Full-time"),
+    c("1", "2"),
+    c("Data Visualization Role has Lower compensation"),
+    c("USA or Canada"),
+    c("Mostly Self-Taught"),
+    c("Yes"),
+    c("Bachelors"), 
+    c("white", "hispanic"),
+    c("Data visualization is the focus of my job"),
+    c("Much more"),
+    c("26 - 35"),
+    c("Mixed"),
+    c('male'),
+    c("D3", "Other Javascript", "Other R", "Inkscape", "ggplot", "JavaScript", "R Shiny", "R"),
+    c('Intended to work in data visualization')
+  )
+)
+```
+
+
+## Filtering the network for those who are like me
+
+
+Let's create networks of people who answered questions like I did. The below code creates a list of subgraphs that have only one question represented and only includes people who answered the question like I did. 
+
+
+```{r createSubnetworks}
+#create subnetworks of people who answered questions as I did
+same_answers <- lapply(seq_along(my_survey_responses$questions), function(i){
+  getSameAnswers(g,
+                 my_survey_responses$questions[i],
+                 my_survey_responses$answers[[i]])
+})
+```
+
+
+We want to create a single graph by combining each of the subgraphs together. Combining graphs together is a little tricky and I haven't figured out a more efficient way to combine graphs together. What we will do is create multiple tibbles representing edge lists, bind them together, and then make a completely new graph using `graph_from_data_frame()`
+
+
+```{r createEdges}
+edges <- lapply(same_answers, function(x){
+  el <- x %>%
+    #creates  matrix with source in first column and target in second column
+    ends(E(.)) %>%
+    as.tibble() %>%
+    mutate(type = x %>% E() %>% .$type %>% .[1]) %>%
+    rename(source = V1,
+           target = V2)})%>%
+  bind_rows()
+
+networkLikeMe <- graph_from_data_frame(edges)
+```
+ 
+ 
+Let's take a look at the ten people who answered these questions like me. The higher the degree, the more question they answered like me. 
+ 
+ 
+```{r findPeopleDegree}
+networkLikeMe %>%
+  degree(mode = 'out') %>%
+  .[.>0] %>%
+  sort(T) %>%
+  head(10)
+```
+
+
+I've only answered 15 questions, so people who have at least 12 similar connections to me seems like a decent cut-off point for deciding whether or not someone is similar to me. Let's create a network of people who have at least 12 similar connections to me:
+
+
+```{r fullNetwokr}
+networkLikeMe_full <- networkLikeMe %>%
+  V() %>%
+  .[degree(networkLikeMe, mode = 'out') >= 12] %>%
+  names() %>%
+  save_as('peopleLikeMe') %>%
+  smooth_transition(networkLikeMe) %>%
+  E() %>%
+  .[peopleLikeMe %->% V(networkLikeMe)] %>%
+  reverse_subgraph_edges(networkLikeMe)
+```
+
+
+Let's identify the people who are similar to me. 
+
+
+```{r peopleLikeMe}
+peopleLikeMe
+```
+
+
+There are 17 people who are similar to me out of `r V(g)[type =='person'] %>% length`. Let's explore these people:
+
+
+```{r peopleLikeMeFull}
+peopleLikeMe_full <- peopleLikeMe %>%
+  reverse_ego(g, 1) %>%
+  unlist %>%
+  names() %>% 
+  unique %>%
+  reverse_induced_subgraph(g)
+```
+
+
+My current job title is "Data Visualization Programmer", let's check out the jobs of people like me:
+
+
+```{r jobTitle}
+peopleLikeMe_full %>%
+  E() %>%
+  .[type == "What is your official job title?" ] %>%
+  reverse_subgraph_edges(peopleLikeMe_full) %>%
+  degree(mode = 'in') %>%
+  .[. > 0] %>%
+  sort(T)
+```
+
+
+"Data Visualization Engineer" seem synonymous to "Data Visualization Engineer" so it makes sense as one of the top jobs listed for people like me. "Graphics Editor" and "Data Journalist" are two positions that I would love to have. So it's neat that people with those jobs can be found in a list of people like me. Just for comparison, let's check out what are the top ten jobs of the community:
+
+
+```{r topJobs}
+g %>%
+  E() %>%
+  .[type == "What is your official job title?"] %>%
+  reverse_subgraph_edges(g) %>%
+  degree(mode = 'in') %>%
+  sort(T) %>%
+  head(10)
+```
+
+
+Neither "Data Visualization Engineer", "Graphics Editor", nor "Data Journalist" show up as a top ten job for the community. This implies that the people listed in *peopleLikeMe* are actually like me and not just a typical person in the data viz community. Cool, it seems like graph traversal is doing a good job of identifying people like me. Let's create the building blocks to see how people like me answered questions:
+
+
+```{r}
+questions <- g %>%
+  E() %>%
+  .$type %>%
+  unique
+
+similarAnswers <- lapply(questions, function(x){
+  q <- x
+  a <- whatTheySaid(peopleLikeMe_full, x)
+  list(
+    question = q,
+    answers = a
+  )})
+
+names(similarAnswers) <- sapply(similarAnswers, function(x){x$question})
+
+similarAnswers <- lapply(similarAnswers, function(x){x$answers})
+```
+
+
+Let's explore how people like me answered some questions:
+
+
+```{r howDidTheyAnswer}
+similarAnswers$`Who do you look to as a thought leader in data visualization?`
+similarAnswers$`Who do you make data visualizations for?`
+similarAnswers$`Which of these charts have you used in production in the last 6 months:`
+similarAnswers$`What technologies do you use to visualize data?`
+```
+
+
+# Conclusion
+
+The topic of community was spoken about a lot last year. Julia Silge explored the topic [useR!2017 ](https://juliasilge.com/blog/navigating-packages/). Eric Socolofsky and Elijah Meeks developed a Medium page specifically focusing on [Visualizing, The Field](https://medium.com/visualizing-the-field). Exploring community surveys is important for identifying the health of a community, but also exploring the indiiduals that create those communities. 
+
+# Ending Thoughts
+
+Before I moved back to the states I lived on a farm in South America. I lived with family, and while I wasn't alone, I definitely felt lonely. I had a lot of free time and I eventually decided to learn how to code. My spanish was pretty bad and I didn't know anyone nearby who could teach me how to code, so I had to learn everything online. And while I am technically "Mostly Self-Taught" I would never be able to do what I can do now if it weren't for the wonderful online **R** and **D3** communities. Very awesome people within these communities took their time to write tutorials so people like me could learn. Some were even kind enough to look at my code and give me advice directly. The [**D3 slack channel**](https://d3-slackin.herokuapp.com/) in particular was a place that provided me with both a place to learn as well as a social outlet. I care very deeply about these communities and being able to find people similar to me within them makes me really happy - it implies that I actually do belong within their ranks.
+
+
+# Appendix
+
+
+Just in case you want to learn more about people like me, below is their answers to all the questions.
+
+
+```{r appendix, results='asis'}
+personProfile <- function(g){
+  g %>%
+    V() %>%
+    .[type == 'person'] %>%
+    reverse_ego(g) %>%
+    lapply(function(x){
+      x %>% 
+        names() %>%
+        reverse_induced_subgraph(g) %>%
+        save_as('individualOfInterest') %>%
+        E() %>%
+        .[type %in% questions] %>%
+        save_as('questionEdge') %>%
+        reverse_subgraph_edges(individualOfInterest) %>%
+        ends(E(.)) %>%
+        as.tibble() %>%
+        rename(person = V1,
+               answer = V2) %>%
+        mutate(question = questionEdge$type) %>%
+        select(person, question, answer)  %>%
+        arrange(question) %>%
+        knitr::kable()
+  })
+}
+
+personProfile(peopleLikeMe_full)
+
+```
