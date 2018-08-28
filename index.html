@@ -1,84 +1,261 @@
+<html>
 <head>
-    <style>
-        .thumbs{
-            float: left;
-        }
+  <meta charset="utf-8" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/ScrollMagic/2.0.5/ScrollMagic.min.js"></script>
+  <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/ScrollMagic/2.0.5/plugins/debug.addIndicators.min.js"></script> -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/1.19.0/TweenMax.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/ScrollMagic/2.0.5/plugins/animation.gsap.min.js"></script>
+  <style>
 
-        .text{
-            overflow: auto;
-        }
-    </style>
+    @keyframes scrolldown {
+      0% {color: #f1f1f1;}
+      50% {color: #555;}
+      100% {color: #f1f1f1;}
+    }
+
+    @-webkit-keyframes scrolldown {
+      0% {color: #f1f1f1;}
+      50% {color: #555;}
+      100% {color: #f1f1f1;}
+    }
+
+    @-moz-keyframes scrolldown {
+      0% {color: #f1f1f1;}
+      50% {color: #555;}
+      100% {color: #f1f1f1;}
+    }
+
+    #scrollDown {
+      animation: scrolldown 3s infinite;
+      -webkit-animation: scrolldown 3s infinite;
+      -moz-animation: scrolldown 3s infinite;
+    }
+
+    body {
+      margin: 0;
+      color: #f1f1f1;
+    }
+
+    p {
+      font-size: 1.5em
+    }
+
+    h1 {
+      font-size: 3em;
+    }
+
+
+    h1, h2, p {
+      margin: 2%;
+      text-align: center;
+    }
+
+    h2 {
+      font-size: 2.5em;
+      margin-top: 25
+    }
+
+
+    #pinContainer {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+    .panel {
+      height: 100%;
+      width: 100%;
+      top: 0%;
+      left: 0%;
+      position: absolute;
+    }
+    .grey {
+      background-color: #555
+    }
+    .black {
+      background-color: #111
+    }
+  </style>
 </head>
 <body>
-    <div style = 'text-align: center; margin: 20'>
+  <div id='pinContainer'>
+    <section class="panel black" id='contactMe' style='display:grid; justify-content: center; align-content: center'>
+      <h2>There's More</h2>
+      <p>But you'll have to ask me if you want to learn what else I can do.</p>
+      <p>Please feel free to email me at:</p>
+      <p><a href=' mailto:example@email.com '>ortizulloabenjamin@gmail.com</a></p>
+    </section>
+    <section class='panel grey' id='d3'>
+      <h2 id='dataViz'>Data Visualization</h2>
+      <div style="position: absolute; width: 100%" class='fourthFadeOut'>
+        <p id='d31'>I like doing a little bit of everything.</p>
+        <p id='d32'>But the career path I chose is data visualization.</p>
+        <p id='d33'>And the skill I want to develop is interactive data visualization. Particularly using tools like...</p>
+      </div>
+      <div style="position: absolute; width: 100%; height: 33%; top: 33%" id="d3logo">
+        <img src="d3.png" alt="The D3.js Logo" style="height: 100%; display: block; margin-left: auto; margin-right: auto"/>
+      </div>
+      <div style="position: absolute; width: 100%; height: 50%; top: 25%" id='timssDash'>
+        <a href='#' ><img src="timss_2015_math_questions.png" alt="A screen shot of the TIMSS dashboard" style='height: 100%; display: block; margin-left: auto; margin-right: auto'/></a>
+      </div>
+      <div id='fourthExampleInfo' style="position: absolute; width: 100%;  top: 75%;">
+        <br />
+        <p>Click on the image to interactiely explore the TIMSS 2015 Math Results.</p>
+      </div>
+    </section>
+    <section class='panel black' id='geoSpatial'>
+      <h2 id='geoAnalysis'>Geospatial Analysis</h2>
+      <div style="position: absolute; width: 100%" class='thirdFadeOut'>
+        <p>Another growing interest of mine are maps. Maps are one of the oldest tools for data sharing and visualization. Very few tools can provide the amount of information found on maps as concisely as a map.</p>
+        <p>While R provides a lot of great tools for analyzing geospatial data, one of my favorite tools is...</p>
+      </div>
+      <div id='osm' style="position: absolute; width: 100%; top: 35%; height: 33%">
+        <img src="openstreetmaps.png" alt="The Open Street Maps logo" style="position: absolute; width: 30%; height: 100%; left: 33%" />
+        <!-- <img src="googlemaps.png" alt="The Google Maps logo" style="position: absolute; width: 30%; height: 100%; left: 66%" /> -->
+        <!-- <img src="mapbox.png" alt="The Map Box logo" style="position: absolute; width: 30%; height: 100%; left: 66%" /> -->
+      </div>
+      <div style="position: absolute; width: 100%;  top: 66%;" class='thirdFadeOut'>
+        <br />
+        <p>Open Street maps is an open source project where people around the world contribute knowledge about their surroundings. The OSMData package is a way for useRs to access this information.</p>
+      </div>
+      <div style="position: absolute; width: 100%; height: 50%; top: 25%" id='gifDC'>
+        <a href='#' ><img src="capital_2017.gif" alt="An animation that shows DC bike share routes by months. June, July , and August have the most riders." style='height: 100%; display: block; margin-left: auto; margin-right: auto'/></a>
+      </div>
+      <div id='thirdExampleInfo' style="position: absolute; width: 100%;  top: 75%;">
+        <br />
+        <p>Click on the gif to learn how to use open source tools to explore geospatial data.</p>
+      </div>
+    </section>
+    <section class='panel grey' id='graph'>
+      <h2 id='graphNetwork'>Graph/Network Analysis</h2>
+      <div class='secondFadeOut' style="position: absolute; width: 100%">
+        <p>Graphs and complex systems are relatively new passions for me. I've been learning as much as I can with my freetime. </p>
+        <p>My journey into complex systems has exposed me to the following graph technologies...</p>
+      </div>
+      <div style="position: absolute; width: 100%; top: 33%; height: 33%">
+        <img class='secondFadeOutIcon' id='neo4j' src="neo4j.png" alt="The Neo4j logo" style="position: absolute; width: 30%; height: 100%; left: 0%" />
+        <img class='secondFadeOutIcon' id='gremlin'src="Gremlin.png" alt="The Gremlin (tinkerpop) logo" style="position: absolute; width: 30%; height: 100%; left: 33%" />
+        <img id='igraph' src="igraph.svg" alt="The igraph logo" style="position: absolute; width: 30%; height: 100%; left: 66%" />
+      </div>
+      <div style="position: absolute; width: 100%; height: 33%; top: 33%" id='useR2018'>
+        <a href='https://www.youtube.com/watch?v=-wJ0WnKqbvk&t=1s' ><img src="useR2018ss.png" alt="A screen shot of me nervously going over too much graph information in only 20 minutes" style='height: 100%; display: block; margin-left: auto; margin-right: auto'/></a>
+      </div>
+      <div class='secondFadeOut' style="position: absolute; width: 100%;  top: 66%;">
+        <br />
+        <p>Neo4j is a very popular label-property graph database. Gremlin is the querying language associated with the TinkerPop graph framework. And igraph is one of the main packages for graph analysis in R.</p>
+      </div>
+      <div id='secondExampleInfo' style="position: absolute; width: 100%;  top: 66%;">
+        <br />
+        <p>Click on the image to watch my useR! 2018 talk on graph analysis using igraph.</p>
+      </div>
+    </section>
+    <section class='panel black' id='rStats'>
+      <h2 id='dataEngineering'>Data Engineering</h2>
+      <div style="position: absolute;  width: 100%" class='firstFadeOut'>
+        <p>Almost everything I do requires data mining and data manipulation of some kind.</p>
+        <p>My tool of choice for these tasks is...</p>
+      </div>
+      <div style="position: absolute; width: 100%; height: 33%; top: 33%" id='rLogo'>
+        <img src="R_logo.svg.png" alt="The R Stats Logo" style='height: 100%; display: block; margin-left: auto; margin-right: auto'/>
+      </div>
+      <div style="position: absolute; width: 100%; height: 33%; top: 33%" id='timss2011'>
+        <a href='https://benjaminortizulloa.github.io/pages/Visualizing_2011_TIMSS.html' ><img src="timss2011ss.png" alt="A chart from my timss project showing the gender and correct ration comparison for Chile, Korea, Lithuania, and USA" style='height: 100%; display: block; margin-left: auto; margin-right: auto'/></a>
+      </div>
+      <div style="position: absolute; width: 100%;  top: 66%;" class='firstFadeOut'>
+        <br />
+        <p>While the R statistical language is powerful enough on its own, what makes it a powerful tool is the community around it. Wonderful people have created amazing tools and tutorials that make all aspects of the data mining, cleaning, and exploration process as painless as possible.</p>
+      </div>
+      <div style="position: absolute; width: 100%;  top: 66%;" id='firstExampleInfo'>
+        <br />
+        <p>Click the image to learn how I used R to explore the 2011 Trends in International Math and Science Study.</p>
+      </div>
+    </section>
+    <section class= 'panel grey' id='intro'>
+      <div style="display: flex; height: 80%; justify-content: center; flex-direction: column; ">
+        <p>
+          Hello, my name is...
+        </p>
         <h1>Benjamin Ortiz Ulloa</h1>
-        <p>I'm a data engineer who focuses on data vizualization. The three languages that I'm most comfortable in are R, JavaScript, and Spanglish. If you would like to work with me, then please email me at <a href = 'mailto:ortizulloabenjamin@gmail.com'>ortizulloabenjamin@gmail.com</a></p>
-        <p>If you want to look at some pretty cool stuff that I've done, then please take a look at my projects below. They work best on a computer using either Chrome or Firefox.</p>
-        <p>If you want to look at some pretty boring stuff that I've done, then please take a look at my resume <a href = 'pages/resume.html'>here</a>. It works best if you just ignore it and go to the projects below instead.</p>
-    </div>
+        <p>
+          and I'm a [insert buzzword title]. But labels aren't the best way to describe what I can do. So I'll just tell you...
+        </p>
+      </div>
+      <div  style='position: absolute; top: 80%; right: 5%' id='scrollDown'>
+        <p>
+          Scroll Down
+        </p>
+        <p style="position: absolute; right: 0%">
+          &#10549;
+        </p>
+      </div>
+    </section>
+  </div>
+
 </body>
-<script src = 'libraries/d3.js'></script>
-<script src = 'libraries/d3v4+jetpack.js'></script>
 <script>
-    var pages = [
-        {title: "Playing With Graphs", description: "My journey into the world of graphs.", link: "graph_index"},
-        {title: "2015 TIMSS Math", description: "An attempt to visualize the 2015 TIMSS math assesment using D3. The visualization involves more than 7,000 different data points and compares questions at both an international and national scale.", link: "timss_2015_math_questions"},
-        {title: "Enduring Freedom", description: "An attempt to pay my respects to those who fell during Operation Enduring Freedom. It is an interactive memorial with information on each individual", link: "enduring_freedom"},
-        {title: "2011 TIMSS Math", description: "An exploration of the 2011 TIMSS math assesment using R. The report shows the process used to clean data and protype visualizations.", link: "Visualizing_2011_TIMSS"},
-        {title: 'My Foggy Map', description: 'A personal reinterpretation of Dylan Moriarity\'s Foggy Spaces using the osmplotr package.', link: 'foggy_spaces_osmplotr_1'},
-        {title: "An Intro to Fractals", description: "An scrollstory explaining the concept of self-similar fractals. The scrollstory uses both canvas and D3.", link: "fractals"},
-        {title: "One Laptop per Child", description: "A D3 makeover challenge hosted by Curran Kelleher. I recreated the original chart as an interactive scrollstory.", link: "d3mo1"},
-        {title: "D3 Scale Primer", description: "A primer on when to use a log scale and how to scale the area of a circle.", link: "scale_primer"},
-        {title: "Bioethics Network Graph", description: "An attempt to show how a force network diagram can be used by teachers and professors to better engage their students. Serves as a prototype and still needs to be filled with information.", link: "bioethics_primer"}];
 
-    var thumbSize = [400, 200]
-    var portfolioThumbs = d3.select('body')
-        .appendMany(pages, 'div.thumbs')
-        .st({width: thumbSize[0],
-             height: thumbSize[1],
-             margin: 10
-            });
+var controller,
+    animation,
+    scene;
 
-    portfolioThumbs.append('div')
-        .st({'z-index': 0,
-             position: 'absolute'})
-        .append('img')
-        .at({src: function(d){return 'images/' + d.link + '.png'},
-             alt: function(d){return d.title },
-             id: function(d){return d.link }})
-        .st({width: thumbSize[0],
-             height: thumbSize[1]});
+function remakeAnimation(){
 
-    portfolioThumbs.append('a')
-        .at({href: function(d){return 'pages/' + d.link + '.html'}})
-        .append('div')
-        .at({id: function(d){return 'text'+d.link },
-             class: 'text'})
-        .st({'z-index': 1,
-             'background-color': 'black',
-             color: 'white',
-             'text-align': 'center',
-             width: thumbSize[0],
-             height: thumbSize[1],
-             position: 'relative',
-             opacity: 0,
-             'font-size': 16
-            })
-        .on('mouseover', handleMouseOver)
-        .on('mouseout', handleMouseOut)
-        .html(function(d){return "<h2><b>" + d.title + "</b></h2><p>" + d.description + "</p>"})
+  // if(scene){scene.refresh()}
+
+  if(scene){scene.destroy(true)}
+  controller = null;
+  animatino = null;
+  scene = null;
 
 
-    function handleMouseOver(d){
-        d3.select('#text' + d.link)
-            .st({opacity: 1});
-    }
 
-    function handleMouseOut(){
-        d3.selectAll('.text')
-            .st({opacity: 0});
-    }
+  controller = new ScrollMagic.Controller();
 
+  animation = new TimelineMax()
+   .fromTo('#intro', 1, {y: "0%"}, {y: "-100%"} )
+   .to('.firstFadeOut', .5, {autoAlpha: 0}, 'firstFade')
+   .to('#rLogo', 1, {y: "-100%", x: '-33%', scale: .5}, 'firstFade')
+   .to('#dataEngineering', 1, {y: '200%'}, 'firstFade')
+   .fromTo('#timss2011', 1, {autoAlpha: 0, x: "100%"}, {autoAlpha: .8, x: '0%'}, 'firstFade')
+   .fromTo('#firstExampleInfo', 1, {autoAlpha: 0, x: '-100%'}, {autoAlpha: 1, x: '0%'}, 'firstFade')
+   .fromTo('#rStats', 1, {x: "0%"}, {x: "-100%"} )
+   .to('.secondFadeOut', 1, {autoAlpha: 0}, 'secondFade')
+   .to('#graphNetwork', 1, {y: '200%'}, 'secondFade')
+   .to('.secondFadeOutIcon', 1, {y: '250%'}, 'secondFade')
+   .fromTo('#useR2018', 1, {autoAlpha: 0, x: '-100%'}, {autoAlpha: 1, x: '0%'}, 'secondFade')
+   .fromTo('#secondExampleInfo', 1, {autoAlpha: 0, y: '100%'}, {autoAlpha: 1, y: '0%'}, 'secondFade')
+   .to('#igraph', 1, {x: '-233%', y: '-100%', scale: .5}, 'secondFade')
+   .fromTo('#graph', 1, {y: "0%"}, {y: "100%"} )
+   .to("#osm", 1, {x: '-33%', y: "-100%", scale: .5}, 'thirdFade')
+   .to('#geoAnalysis', 1, {y: '200%'}, 'thirdFade')
+   .to('.thirdFadeOut', 1, {autoAlpha: 0}, 'thirdFade')
+   .fromTo('#gifDC', 1, {scale: 0}, {scale: 1}, 'thirdFade')
+   .fromTo("#thirdExampleInfo", 1, {autoAlpha: 0}, {autoAlpha: 1}, 'thirdFade')
+   .fromTo('#geoSpatial', 1, {x: "0%"}, {x: "100%"} )
+   .from('#d31', .5, {autoAlpha: 0})
+   .from('#d32', .5, {autoAlpha: 0})
+   .from('#d33', .5, {autoAlpha: 0})
+   .fromTo('#d3logo', .5, {autoAlpha: 0}, {y: '50%', autoAlpha: 1})
+   .to('#d3logo', 1, {x: '-33%', y: '-100%', scale: .5}, 'fourthFade')
+   .to('.fourthFadeOut', 1, {autoAlpha: 0}, 'fourthFade')
+   .to("#dataViz", 1, {y: '200%'}, 'fourthFade')
+   .fromTo('#timssDash', 1, {scale: 0}, {scale: 1}, 'fourthFade')
+   .fromTo('#fourthExampleInfo', 1, {autoAlpha: 0}, {autoAlpha: 1}, 'fourthFade')
+   .to('#d3', 1, {y: "-100%"})
 
+  scene = new ScrollMagic.Scene({
+       triggerElement:'#pinContainer',
+       triggerHook: 'onLeave',
+       duration: '1000%'
+     })
+     .setPin('#pinContainer')
+     .setTween(animation)
+     // .addIndicators()
+     .addTo(controller)
+}
+
+remakeAnimation();
+// document.addEventListener("resize", function(){scene.refresh()});
 
 </script>
+
+</html>

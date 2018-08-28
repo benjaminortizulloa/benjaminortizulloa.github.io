@@ -1,0 +1,84 @@
+<head>
+    <style>
+        .thumbs{
+            float: left;
+        }
+
+        .text{
+            overflow: auto;
+        }
+    </style>
+</head>
+<body>
+    <div style = 'text-align: center; margin: 20'>
+        <h1>Benjamin Ortiz Ulloa</h1>
+        <p>I'm a data engineer who focuses on data vizualization. The three languages that I'm most comfortable in are R, JavaScript, and Spanglish. If you would like to work with me, then please email me at <a href = 'mailto:ortizulloabenjamin@gmail.com'>ortizulloabenjamin@gmail.com</a></p>
+        <p>If you want to look at some pretty cool stuff that I've done, then please take a look at my projects below. They work best on a computer using either Chrome or Firefox.</p>
+        <p>If you want to look at some pretty boring stuff that I've done, then please take a look at my resume <a href = 'pages/resume.html'>here</a>. It works best if you just ignore it and go to the projects below instead.</p>
+    </div>
+</body>
+<script src = 'libraries/d3.js'></script>
+<script src = 'libraries/d3v4+jetpack.js'></script>
+<script>
+    var pages = [
+        {title: "Playing With Graphs", description: "My journey into the world of graphs.", link: "graph_index"},
+        {title: "2015 TIMSS Math", description: "An attempt to visualize the 2015 TIMSS math assesment using D3. The visualization involves more than 7,000 different data points and compares questions at both an international and national scale.", link: "timss_2015_math_questions"},
+        {title: "Enduring Freedom", description: "An attempt to pay my respects to those who fell during Operation Enduring Freedom. It is an interactive memorial with information on each individual", link: "enduring_freedom"},
+        {title: "2011 TIMSS Math", description: "An exploration of the 2011 TIMSS math assesment using R. The report shows the process used to clean data and protype visualizations.", link: "Visualizing_2011_TIMSS"},
+        {title: 'My Foggy Map', description: 'A personal reinterpretation of Dylan Moriarity\'s Foggy Spaces using the osmplotr package.', link: 'foggy_spaces_osmplotr_1'},
+        {title: "An Intro to Fractals", description: "An scrollstory explaining the concept of self-similar fractals. The scrollstory uses both canvas and D3.", link: "fractals"},
+        {title: "One Laptop per Child", description: "A D3 makeover challenge hosted by Curran Kelleher. I recreated the original chart as an interactive scrollstory.", link: "d3mo1"},
+        {title: "D3 Scale Primer", description: "A primer on when to use a log scale and how to scale the area of a circle.", link: "scale_primer"},
+        {title: "Bioethics Network Graph", description: "An attempt to show how a force network diagram can be used by teachers and professors to better engage their students. Serves as a prototype and still needs to be filled with information.", link: "bioethics_primer"}];
+
+    var thumbSize = [400, 200]
+    var portfolioThumbs = d3.select('body')
+        .appendMany(pages, 'div.thumbs')
+        .st({width: thumbSize[0],
+             height: thumbSize[1],
+             margin: 10
+            });
+
+    portfolioThumbs.append('div')
+        .st({'z-index': 0,
+             position: 'absolute'})
+        .append('img')
+        .at({src: function(d){return 'images/' + d.link + '.png'},
+             alt: function(d){return d.title },
+             id: function(d){return d.link }})
+        .st({width: thumbSize[0],
+             height: thumbSize[1]});
+
+    portfolioThumbs.append('a')
+        .at({href: function(d){return 'pages/' + d.link + '.html'}})
+        .append('div')
+        .at({id: function(d){return 'text'+d.link },
+             class: 'text'})
+        .st({'z-index': 1,
+             'background-color': 'black',
+             color: 'white',
+             'text-align': 'center',
+             width: thumbSize[0],
+             height: thumbSize[1],
+             position: 'relative',
+             opacity: 0,
+             'font-size': 16
+            })
+        .on('mouseover', handleMouseOver)
+        .on('mouseout', handleMouseOut)
+        .html(function(d){return "<h2><b>" + d.title + "</b></h2><p>" + d.description + "</p>"})
+
+
+    function handleMouseOver(d){
+        d3.select('#text' + d.link)
+            .st({opacity: 1});
+    }
+
+    function handleMouseOut(){
+        d3.selectAll('.text')
+            .st({opacity: 0});
+    }
+
+
+
+</script>
