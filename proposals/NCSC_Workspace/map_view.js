@@ -1,6 +1,7 @@
 Vue.component('states-layout', {
   template: `
   <div id="mapContainer" style='position: fixed; width: 100%; height: 100%; overflow: scroll'>
+    <h1>State Case Load</h1>
     <svg style='position: absolute; width: 100%; height: 100%'>
       <g id="mapG">
         <path v-for="lines in mapData"
@@ -37,7 +38,7 @@ Vue.component('states-layout', {
       if(d3.select('#mapContainer').node()){
         sWidth = d3.select('#mapContainer').node().getBoundingClientRect().width
         console.log(sWidth)
-        d3.select('#mapG').attr('transform', `scale(${sWidth/1000})`)
+        d3.select('#mapG').attr('transform', `scale(${sWidth/1400})`)
         d3.select('svg').attr('height', sWidth * .618)
       }
     },

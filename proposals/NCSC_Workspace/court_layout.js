@@ -1,7 +1,7 @@
 
 Vue.component('court-layout', {
   template: `
-  <div :class='"state_" + stateindex' style="position: absolute; width: 100%; height: 100%;">
+  <div :class='"state_" + stateindex' style="position: absolute; width: 95%; height: 95%;">
     <div :class='"chart_" + stateindex' style="top: 0%; height: 100%; width: 100%; overflow: scroll">
       <svg :class='"chart_" + stateindex' style="position: absolute; width: 100%; height: 100%">
         <template v-for='x in filteredCourtTypes.Courts'>
@@ -41,12 +41,14 @@ Vue.component('court-layout', {
       </div>
     </div>
     <div :id='"info_" + stateindex' style="position: absolute; bottom: 0%; height: 0%; width: 100%; overflow: scroll">
+      <a href="#" @click="closeInfo" >&#11015;</a>
+      <span v-html="infoText"></span>
     </div>
   </div>
   `,
   data() {
     return {
-
+      infoText: ''
     }
   },
   props: ['courtdata', 'stateindex'],
@@ -74,45 +76,42 @@ Vue.component('court-layout', {
       d3.selectAll(".chart_" + this.stateindex)
         .style("height", "100%")
       d3.select('#info_' + this.stateindex)
-        .style('heigth', '0%')
+        .style('height', '0%')
     },
     courtInfo(d){
-      console.log(d.Notes)
+      this.infoText = `<a href="${d.Link}" ><b>${d.CourtName.join(' ')} (${d.CourtLevelID})</b></a><br><br>
+      <b>Funding Source:</b> ${d.FundingDescription}<br>
+      <b>Appeal From Admin Agency:</b> ${d.AppealFromAdminAgency}<br>
+      <b>Notes:</b> ${d.Notes}<br><br>
+
+
+      <table>
+      <th>
+        <tr>
+          <td>Description</td>
+          <td>Original<br>Proceeding?</td>
+          <td>Interlocutory<br>Appeal?</td>
+          <td>Appeal<br>by<br>Permission?</td>
+          <td>Appeal<br>by<br>Right?</td
+        </tr>
+      <th>
+      ${d.CaseTypes.map(x => "<tr><td>" +
+        x.CaseTypeDescription +
+        "</td><td>" +
+         x.OriginalProceeding +
+        '</td><td>' +
+        x.InterlocutoryAppeal +
+        '</td><td>' +
+        x.AppealByPermission +
+        '</td><td>' +
+        x.AppealByRight +
+        '</td></tr>').join('')}
+      </table>
+      `
+
       d3.select("#info_" + this.stateindex)
         .style("height", "40%")
-        .html(
-          `
-          <a href="#" @click="${this.closeInfo}" >&#11015;</a>
-          <a href="${d.Link}" ><b>${d.CourtName.join(' ')} (${d.CourtLevelID})</b></a><br><br>
-          <b>Funding Source:</b> ${d.FundingDescription}<br>
-          <b>Appeal From Admin Agency:</b> ${d.AppealFromAdminAgency}<br>
-          <b>Notes:</b> ${d.Notes}<br><br>
 
-
-          <table>
-          <th>
-            <tr>
-              <td>Description</td>
-              <td>Original<br>Proceeding?</td>
-              <td>Interlocutory<br>Appeal?</td>
-              <td>Appeal<br>by<br>Permission?</td>
-              <td>Appeal<br>by<br>Right?</td
-            </tr>
-          <th>
-          ${d.CaseTypes.map(x => "<tr><td>" +
-            x.CaseTypeDescription +
-            "</td><td>" +
-             x.OriginalProceeding +
-            '</td><td>' +
-            x.InterlocutoryAppeal +
-            '</td><td>' +
-            x.AppealByPermission +
-            '</td><td>' +
-            x.AppealByRight +
-            '</td></tr>').join('')}
-          </table>
-          `
-        )
 
       d3.selectAll(".chart_" + this.stateindex)
         .style("height", "60%")
