@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+
+<svg style='position: absolute; width: 100%;'></svg>
+
+<script src="./d3/d3.min.js"></script>
+<script src="./topojson.min.js"></script>
+<script src="./state_data.js"></script>
+<script src="./us-10m.v1.js"></script>
+<script>
+
+var svg = d3.select("svg");
+
+var path = d3.geoPath();
+
+caseLoadColor = d3.scaleOrdinal()
+  .domain([1,2,3,4,5,6])
+  .range(["#E6E6E6", "#D1D1D1", "#BBBBBB", "#A0A0A0", "#7F7F7F", "#4D4D4D"])
+
+d3.json("us-10m.v1.json")
+  .then(function( us) {
+
+  data = {us, topojson}
+  comboData = topojson.feature(us, us.objects.states).features
+  svg.append("g")
+      .attr("class", "states")
+    .selectAll("path")
+    .data(topojson
+      .feature(us, us.objects.states)
+      .features
+      .map(x => {
+        matching = state_data.filter(d => d.id == x.id)[0]
+        x.fullState = matching.STATE_NAME
+        x.CaseLoad = matching.TrialCaseloadSizeID
+        return x
+      }))
+    .enter().append("path")
+      .attr("d", path)
+      .attr('id', d => d.id)
+      .style('stroke', 'black')
+      .style('fill', d => caseLoadColor(d.CaseLoad))
+      .on('mouseover', function(d){
+        console.log(d);
+        d3.select(this)
+          .style('stroke', 'red')
+          .style('stroke-width', 5)
+      })
+
+  svg.append("path")
+      .attr("class", "state-borders")
+      .attr("d", path(topojson.mesh(us, us.objects.states, function(a, b) { return a !== b; })))
+      .attr('stroke', 'black')
+      .attr('fill', 'none')
+
+
+});
+
+</script>
