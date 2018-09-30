@@ -8,12 +8,12 @@
       <states-layout></states-layout>
     </div>
     <div v-if="view == 'courts'">
-      <div id='control' style="position:fixed; width: 100%; height: 5%; top: 0; left: 0">
-        <state-counter></state-counter>
-      </div>
       <template v-for="i in stateCount">
         <state-info v-bind:stateindex="i" v-bind:chosenState='chosenState'></state-info>
       </template>
+      <div id='control' style="position:absolute; width: 100%; height: 10%; top: 0; left: 0">
+        <state-counter></state-counter>
+      </div>
     </div>
   </div>
 </body>
