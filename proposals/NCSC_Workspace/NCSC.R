@@ -56,14 +56,61 @@ state_info <- read.delim('state.psv', sep='|') %>%
   left_join(select(hackData$PopulationCategory, -DisplayOrder)) %>%
   left_join(select(hackData$Rural, -DisplayOrder)) %>%
   left_join(select(hackData$TrialCriminalProcessing, -DisplayOrder))  %>%
-  left_join(select(hackData$DeathPenalty, -DisplayOrder))
-  select(-DisplayOrder, -PopulationCategoryID, -RuralID, -TrialStructureID, -TrialCriminalProcessingID, -DeathPenalty)
+  left_join(select(hackData$DeathPenalty, -DisplayOrder)) %>%
+  left_join(select(hackData$AppellateCriminalStructure, -DisplayOrder)) %>%
+  left_join(select(hackData$PopulationDensity, -DisplayOrder)) %>%
+  left_join(select(hackData$CaseloadSize, -DisplayOrder), by = c('TrialCaseloadSizeID' = 'CaseloadSizeID')) %>%
+  filter(!is.na(TrialCaseloadSizeID)) %>%
+  select(-DisplayOrder, -PopulationCategoryID, -RuralID, -TrialStructureID, -TrialCriminalProcessingID, 
+         -DeathPenaltyID, -TrialCaseloadSizeID, -AppellateCriminalStructureID, -PopulationDensityID)
+
+
 us_json <- read_lines('us-10m.v1.json')
 write(str_c('us_topo =', us_json), 'us-10m.v1.js')
 write_tsv(state_info, 'state.tsv')
 state_info_json <- jsonlite::toJSON(state_info) 
 write(state_info_json, 'state_info.json')
 write(str_c('state_data = ', state_info_json), 'state_data.js')
+
+state_info_keys <- list(TrialStructureDescription = hackData$TrialStructure %>% arrange(DisplayOrder), 
+                        PopulationCategoryDescription = hackData$PopulationCategory %>% arrange(DisplayOrder),
+                        RuralDescription = hackData$Rural  %>% arrange(DisplayOrder),
+                        TrialCriminalProcessingDescription = hackData$TrialCriminalProcessing %>% arrange(DisplayOrder),
+                        DeathPenaltyDescription = hackData$DeathPenalty %>% arrange(DisplayOrder), 
+                        AppellateCriminalStructureDescription = hackData$AppellateCriminalStructure %>% arrange(DisplayOrder), 
+                        PopulationDensityDescription = hackData$PopulationDensity %>% arrange(DisplayOrder),
+                        CaseloadSizeDescription = hackData$CaseloadSize %>% arrange(DisplayOrder)) %>%
+  lapply('[[', 2)
+
+forests_colors <- colorRamp(c("forestgreen", 'lightgrey'))(0:4/4) %>%
+  as.tibble() %>%
+  pmap_chr(function(V1, V2, V3) rgb(V1, V2, V3, maxColorValue = 255))
+state_info_color <- list(
+  c("#bdbdbd", "#636363"),
+  rev(grey.colors(7)),
+  forests_colors,
+  c("#bdbdbd", "#636363"),
+  c("#91bfdb", "#fc8d59", 'lightgrey'),
+  c("#e41a1c","#377eb8", "#4daf4a", "#984ea3", "#ff7f00",
+    "#ffff33", "#a65628", 'lightgrey'),
+  rev(grey.colors(7)),
+  rev(grey.colors(6))
+)
+
+state_info_names <- names(state_info_keys)
+
+createColorScale <- function(name, options, colors){
+  str_glue(
+    '{name} = d3.scaleOrdinal().domain({jsonlite::toJSON(options)}).range({jsonlite::toJSON(colors)})'
+  )
+}
+
+colorScaleJson <- pmap(tibble(state_info_names, state_info_keys, state_info_color), function(state_info_names, state_info_keys, state_info_color){createColorScale(state_info_names, state_info_keys, state_info_color)}) %>%
+  str_c(collapse = '\n\n')
+
+
+write(colorScaleJson, 'colorScales.js')
+
 
 
 nestedCourtData %>% filter(is.na(CourtName))

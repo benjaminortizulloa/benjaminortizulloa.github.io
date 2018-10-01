@@ -140,6 +140,7 @@ Vue.component('court-layout', {
                   background: 'white',
                   margin: '0',
                   padding: '5',
+                  cursor: 'pointer',
                   'text-align': 'center',
                   border: d.AppealFromAdminAgency == 0 ?'2px solid black' : '3px solid red'
                 }

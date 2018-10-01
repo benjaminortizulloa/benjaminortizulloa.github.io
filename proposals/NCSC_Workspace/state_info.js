@@ -1,7 +1,7 @@
 Vue.component('state-info', {
   template: `
   <div class='state' v-bind:style="{position: 'absolute', width: dynamicWidth + '%', height: '100%', left: ((stateindex - 1) * dynamicWidth) + '%'}">
-    <select v-model="selectedState" style="display: block; margin: 0 auto;">
+    <select v-model="selectedState" style="display: block; margin: 0 auto;font-size: 14px">
       <option disabled value="">Please select a state</option>
       <option v-for="state in stateData.map(d => d.USStateName)" v-bind:value='state'>
         {{state}}
