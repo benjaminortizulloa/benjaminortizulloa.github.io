@@ -1,0 +1,53 @@
+<html>
+<head>
+  <meta charset='utf-8'/>
+  <style>
+    body {
+      color: yellow;
+      background-color: black;
+    }
+    h1 {
+      font-size: 8vw;
+      line-height: 10vw;
+      font-family: "Helvetica Neue";
+    }
+    li {
+      font-size: 5vw;
+    }
+  </style>
+</head>
+<body >
+  <div id='app'>
+    <template v-if="view == 'login'">
+      <login-page></login-page>
+    </template>
+    <template v-if="view == 'Lab'">
+      <lab-intro-page></lab-intro-page>
+    </template>
+    <template v-if="view == 'Patient'">
+      <patient-intro-page></patient-intro-page>
+    </template>
+  </div>
+</body>
+<script src="./js/vue.js"></script>
+<script src="./js/vuex.js"></script>
+<script src='./js/state.js'></script>
+<script src="./js/login.js"></script>
+<script src="./js/labIntro.js"></script>
+<script src="./js/selectPatient.js"></script>
+<script src='./js/confirm.js'></script>
+<script src='./js/labs.js'></script>
+<script src='./js/doneLabs.js'></script>
+<script src='./js/patientIntro.js'></script>
+<script src='./js/patientMain.js'></script>
+<script>
+var app = new Vue({
+  el: "#app",
+  computed: {
+    view(){
+      return store.state.view
+    }
+  }
+})
+</script>
+</html>
