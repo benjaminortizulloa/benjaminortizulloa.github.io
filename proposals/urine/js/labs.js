@@ -4,7 +4,7 @@ Vue.component('lab-page', {
     <h1>Have you completed:</h1>
     <ul>
       <li v-for="test, i in labTests" style="">
-        <span style="float: left; width: 20%">{{test.name}}</span>
+        <span style="float: left; width: 25%">{{test.name}}</span>
         <button @click='changeData("Yes", "happened", i)'>&#10003;</button>
         <button @click='changeData("No", "happened", i)'>&#215;</button>
         <button @click='changeData("Showing", "show", i)'>Network?</button>
@@ -12,7 +12,7 @@ Vue.component('lab-page', {
         <span>{{test.show}}</span>
       </li>
     </ul>
-    <div v-if="labTests.filter(x => !x.happened).length == 0">
+    <div v-if="labTests.filter(x => !x.happened).length == 0" style="margin: auto; width: 50%; border: 3px solid green; padding: 10px;">
       <h2>Are you sure?</h2>
       <button @click="enter">Yes</button>
     </div>

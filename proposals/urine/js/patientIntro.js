@@ -4,6 +4,9 @@ Vue.component('patient-intro-page', {
     <template v-if="view == 'Patient'">
       <patient-main-page></patient-main-page>
     </template>
+    <template v-if="view == 'results'">
+      <results-page></results-page>
+    </template>
   </div>
   `,
   data(){

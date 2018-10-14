@@ -1,12 +1,13 @@
 Vue.component('login-page', {
   template: `
   <div class='login' style="display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; min-height: 100vh;">
-    <h1>Login</h1>
+    <h1>YOURine</h1>
+    <h2>Login</h2>
     <div>
       <p>UserName</p>
       <input />
       <p>Password</p>
-      <input />
+      <input type='password' />
       <p>Login Type</p>
       <select v-model="loginType" style="display: block; margin: 0 auto;">
         <option disabled value="">Please select a login type</option>

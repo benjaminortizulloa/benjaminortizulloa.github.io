@@ -2,36 +2,18 @@ Vue.component('results-page', {
   template: `
   <div class='labTests' v-bind:style="{position: 'absolute', width: '100%', height: '100%'}">
     <h1>Your Results:</h1>
-    <table style="width:100%">
+    <table style="width:60%">
      <tr>
        <th>Test</th>
        <th>Date</th>
        <th>Results</th>
      </tr>
-     <tr v-for>
-     <tr>
-       <td>Jill</td>
-       <td>Smith</td>
-       <td>50</td>
-     </tr>
-     <tr>
-       <td>Eve</td>
-       <td>Jackson</td>
-       <td>94</td>
+     <tr v-for="test in labTests">
+       <td>{{test.name}}</td>
+       <td>{{test.date}}</td>
+       <td>{{test.status}}</td>
      </tr>
     </table>
-    <ul>
-      <li v-for="test, i in labTests" style="">
-        <span style="float: left; width: 20%">{{test.name}}</span>
-        <button @click='changeData("Yes", i)'>&#10003;</button>
-        <button @click='changeData("No", i)'>&#215;</button>
-        <span v-bind:style="colorButton(test.happened)"><b>{{test.happened}}</b></span>
-      </li>
-    </ul>
-    <div v-if="labTests.filter(x => !x.happened).length == 0">
-      <h2>Are you sure?</h2>
-      <button @click="enter">Yes</button>
-    </div>
   </div>
   `,
   data(){
@@ -40,7 +22,7 @@ Vue.component('results-page', {
     }
   },
   computed: {
-    labTests(){ return store.state.labTests}
+    labTests(){ return store.state.labResults}
   },
   methods: {
     enter(){

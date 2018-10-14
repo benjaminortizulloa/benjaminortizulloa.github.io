@@ -20,6 +20,17 @@ Vue.component('confirm-page', {
     changeState (e) {
       console.log(e.target.value)
       store.commit('changeState', {key: 'patientID', value: e.target.value})
+    },
+    confirmation(){
+      const contract = TruffleContract(data)
+      web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:9545"));
+      contract.setProvider(web3.currentProvider)
+      instance = contract.deployed().then(x => {console.log(x);
+        testvar = x;
+      console.log(x.testTestPassResult('fail').then(y => console.log(y)));})
+
     }
   }
 })
+// <button @click="confirmation">Confirm u r u</button>
+// <img src="assets/qrcode.png" alt="qrcode" @click='enter' style = 'width: 80%; display:block; margin: 0 auto;'>
