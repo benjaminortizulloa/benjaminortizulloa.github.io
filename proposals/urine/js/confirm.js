@@ -3,6 +3,9 @@ Vue.component('confirm-page', {
   <div class='confirm' v-bind:style="{position: 'absolute', width: '100%', height: '100%'}">
     <h1>Confirm you are:<br> {{patientID}}</h1>
     <img src="assets/qrcode.png" alt="qrcode" @click='enter' style = 'width: 80%; display:block; margin: 0 auto;'>
+     <button @click="confirmation">Confirm u r u</button>
+     <img src="assets/qrcode.png" alt="qrcode" @click='enter' style = 'width: 80%; display:block; margin: 0 auto;'>
+
   </div>
   `,
   data(){
@@ -32,5 +35,3 @@ Vue.component('confirm-page', {
     }
   }
 })
-// <button @click="confirmation">Confirm u r u</button>
-// <img src="assets/qrcode.png" alt="qrcode" @click='enter' style = 'width: 80%; display:block; margin: 0 auto;'>
