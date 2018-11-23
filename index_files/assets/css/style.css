@@ -1,0 +1,36 @@
+.centered {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
+.tag{
+  width: 100%;
+  background: blue;
+  padding: 1vw;
+  margin: 0;
+}
+#tagTop {
+  background: blue;
+  color: white;
+  border-top-left-radius: 50px;
+  border-top-right-radius: 50px;
+  border-left: black solid 1vw;
+  border-top: black solid 1vw;
+  border-right: black solid 1vw
+}
+#tagCenter {
+  background: white;
+  border-left: black solid 1vw;
+  border-right: black solid 1vw;
+}
+#tagBottom {
+  background: blue;
+  border-bottom-left-radius: 50px;
+  border-bottom-right-radius: 50px;
+  border-left: black solid 1vw;
+  border-bottom: black solid 1vw;
+  border-right: black solid 1vw;
+  height: 2vh;
+}
