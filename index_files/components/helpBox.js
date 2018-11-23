@@ -95,7 +95,7 @@ Vue.component('help-box', {
   computed: {
     annotateAnnotation(){
       return store.state.currentPresentation[store.state.currentSlideIndex] == `
-          <p style="font-size: 4vmin">The help box functionality actually uses <b>D3</b>'s selection capabilities</p>
+          <p style=\"font-size: 4vmin\"><a href=\"https://github.com/benjaminortizulloa/benjaminortizulloa.github.io/blob/master/index_files/components/helpBox.js\" target=\"_blank\">The help box functionality actually uses <b>D3</b>'s selection capabilities</a></p>
           `
     },
 
