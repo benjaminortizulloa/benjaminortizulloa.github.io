@@ -8,24 +8,43 @@
   <script src="./index_files/store/store.js"></script>
   <script src="./index_files/components/helpBox.js"></script>
   <script src="./index_files/components/presentationSlide.js"></script>
-  <script src="./index_files/components/infoDiv.js"></script>
+  <script src="./index_files/components/infoComputer.js"></script>
+  <script src="./index_files/components/infoMobile.js"></script>
   <script src="./index_files/components/nameTag.js"></script>
   <link rel='stylesheet' href="./index_files/assets/css/style.css" >
 </head>
 <body style="margin: 0; padding: 0">
-<div id="app" style="position: absolute; width: 100%; height: 100%; overflow: hidden; ">
+<div id="app" style="position: absolute; width: 100%; height: 100%; overflow: scroll; ">
+  <div v-if="!isMobile()">
+    <name-tag></name-tag>
+    <template v-for="info in infoBoxes">
+      <info-computer v-bind:color='info.color'
+                     v-bind:text='info.text'
+                     v-bind:x='info.x'
+                     v-bind:xside='info.xSide'
+                     v-bind:y='info.y'
+                     v-bind:yside='info.ySide'
+                     v-bind:presentationindex='info.presentation'
+                     v-bind:slides='info.slides'></info-computer>
+    </template>
+  </div>
+  <div v-if="isMobile()">
+    <div style="position: absolute; width: 90%; left: 5%; top: 5%; text-align: center">
+      <p style="font-size: 5vmin; margin: 0">Hi, My name is</p>
+      <p style="font-size: 10vmin; margin: 0">Benjamin Ortiz Ulloa</p>
+      <table style="margin: 0; width: 100%">
+        <template v-for="info in infoBoxes">
+          <tr>
+            <info-mobile v-bind:color='info.color'
+                         v-bind:text="info.text"
+                         v-bind:presentationindex="info.presentation"
+                         v-bind:slides="info.slides"></info-mobile>
+          </tr>
+        </template>
+      </table>
+    </div>
+  </div>
   <help-box></help-box>
-  <name-tag></name-tag>
-  <template v-for="info in infoBoxes">
-    <info-div v-bind:color='info.color'
-              v-bind:text='info.text'
-              v-bind:x='info.x'
-              v-bind:xside='info.xSide'
-              v-bind:y='info.y'
-              v-bind:yside='info.ySide'
-              v-bind:presentationindex='info.presentation'
-              v-bind:slides='info.slides'></info-div>
-  </template>
 </div>
 </body>
 <script>
@@ -33,6 +52,15 @@
 //2190-2193 8592-8595
 var control = new Vue({
   el: '#app',
+  methods: {
+    isMobile(){
+      if(window.innerWidth <= 800 && window.innerHeight <= 600) {
+        return true;
+      } else {
+        return false;
+      }
+    }
+  },
   data: {
     infoBoxes: [
       {
@@ -56,7 +84,7 @@ var control = new Vue({
           `
           <p style='font-size: 4vmin;'>I gave a workshop on <a href="https://2018.erum.io/#talk-abstracts" target="_blank">graph data structures</a> at</p>
           <a href="https://2018.erum.io/#talk-abstracts" target="_blank">
-          <img src="./index_files/assets/img/erum2018.png" alt="eRum 2018" width="150vmin"/>
+          <img src="./index_files/assets/img/erum2018.png" alt="eRum 2018" width="125vmin"/>
           </a>
           `,
           `
@@ -121,7 +149,7 @@ var control = new Vue({
           `
           <p style="font-size: 4vmin">I spoke at:</p>
           <a href="http://ccs2018.web.auth.gr/creating-exploring-and-visualizing-networks-r" target="_blank">
-          <img src="./index_files/assets/img/ccs2018.jpg" alt="Conference on Complex Systems 2018 (Thessaloniki)"  height= "140vmin" />
+          <img src="./index_files/assets/img/ccs2018.jpg" alt="Conference on Complex Systems 2018 (Thessaloniki)"  height= "125vmin" />
           </a>
           `,
           `
@@ -195,13 +223,13 @@ var control = new Vue({
           `
           <p style="font-size: 4vmin">I'm an organizer for</p>
           <a href="https://www.meetup.com/Data-Visualization-DC/" target="_blank">
-            <img src="./index_files/assets/img/datavizdc.png" alt="Data Visualization DC" width="150vmin"/>
+            <img src="./index_files/assets/img/datavizdc.png" alt="Data Visualization DC" height="125vmin"/>
           </a>
           `,
           `
           <p style="font-size: 4vmin">I'm an organizer for</p>
           <a href="https://dc2018.satrdays.org/" target="_blank">
-            <img src="./index_files/assets/img/satrdays.jpg" alt="satRday DC" width="150vmin"/>
+            <img src="./index_files/assets/img/satrdays.jpg" alt="satRday DC" width="125vmin"/>
           </a>
           `,
           `
@@ -213,7 +241,7 @@ var control = new Vue({
           `
           <p style="font-size: 4vmin">and a founder of</p>
           <a href="https://twitter.com/R_LGBTQ" target="_blank">
-            <img src="./index_files/assets/img/rainbowr.png" alt="RainbowR" width="150vmin"/>
+            <img src="./index_files/assets/img/rainbowr.png" alt="RainbowR" width="125vmin"/>
           </a>
           `
         ]

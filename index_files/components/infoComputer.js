@@ -1,4 +1,4 @@
-Vue.component('info-div', {
+Vue.component('info-computer', {
   template: `
   <div>
     <div v-if="show" v-bind:style="mainStyle">
