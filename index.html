@@ -30,17 +30,24 @@
   </div>
   <div v-if="isMobile()">
     <div style="position: absolute; width: 90%; left: 5%; top: 5%; text-align: center">
-      <p style="font-size: 5vmin; margin: 0">Hi, My name is</p>
+      <p style="font-size: 5vmin; margin: 0">Hello, my name is</p>
       <p style="font-size: 10vmin; margin: 0">Benjamin Ortiz Ulloa</p>
-      <table style="margin: 0; width: 100%">
+      <table style="margin: 0; width: 100%; border-collapse: collapse;">
         <template v-for="info in infoBoxes">
-          <tr>
             <info-mobile v-bind:color='info.color'
                          v-bind:text="info.text"
                          v-bind:presentationindex="info.presentation"
                          v-bind:slides="info.slides"></info-mobile>
-          </tr>
         </template>
+        <tr style="margin: 0; padding: 0">
+          <td style="background: grey; padding: 2vmin; border: black solid .5vmin; margin: 0">
+            <a href="./resume.html" target="_blank" style="text-decoration:none">
+              <span style="background: white; font-size: 4vmin; padding: .5vmin 3vmin; cursor: pointer; " class="infoTitle">
+                and here is my C.V.
+              </span>
+            </a>
+          </td>
+        </tr>
       </table>
     </div>
   </div>

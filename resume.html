@@ -1,0 +1,303 @@
+<html>
+<head>
+  <meta charset="utf-8" />
+  <script src="./resume_files/assets/js/vue.js"></script>
+  <script src="./resume_files/components/educationInfo.js"></script>
+  <script src="./resume_files/components/talkInfo.js"></script>
+  <script src="./resume_files/components/employmentInfo.js"></script>
+  <link rel='stylesheet' href="./resume_files/assets/css/style.css" >
+</head>
+<body style="padding: 0; margin: 0">
+  <div id='app'>
+    <div style="padding: 2vmin; margin: 0; background: lightgrey; border-bottom: black solid .5vmin">
+      <h1 style="text-align: center; margin: 0; font-size: 7vmin">Benjamin Ortiz Ulloa</h1>
+      <div style="text-align: center; padding: 0">
+        <div style="display: inline-block; ">
+          <p style="margin: 0 10; padding: 0; font-size: 2.5vmin;">
+            <em><b>phone:</b> (540) 969-9649</em>
+          </p>
+        </div>
+        <div style="display: inline-block; ">
+          <p style="margin: 0 10; padding: 0; font-size: 2.5vmin;">
+            <em><b>email:</b> <a href="mailto:ortizulloabenjamin@gmail.com">ortizulloabenjamin@gmail.com</a></em>
+          </p>
+        </div>
+        <div style="display: inline-block; ">
+          <p style="margin: 0 10; padding: 0; font-size: 2.5vmin;">
+            <em><b>portfolio:</b> <a href="https://benjaminortizulloa.github.io/" target="_blank">benjaminortizulloa.github.io</a></em>
+          </p>
+        </div>
+      </div>
+    </div>
+    <div>
+      <h2 >Education</h2>
+      <hr />
+      <template v-for='data in educationData'>
+        <education-info :title='data.title'
+                        :information="data.information"></education-info>
+      </template>
+    </div>
+    <div>
+      <h2 >Talks</h2>
+      <hr />
+      <template v-for="data in talkData">
+        <talk-info :title='data.title'
+                   :abstract='data.abstract'
+                   :venues=data.venues></talk-info>
+      </template>
+    </div>
+    <div>
+      <h2 >Employment</h2>
+      <hr />
+      <template v-for="data in employmentData">
+        <employment-info :employer='data.employer'
+                         :role='data.role'
+                         :responsibilities='data.responsibilities'></employment-info>
+      </template>
+    </div>
+    <div>
+      <h2 >Technologies</h2>
+      <hr />
+      <table style="width: 95%; border-collapse: collapse; margin: 2vmin">
+        <tr style='font-size: 2.5vmin'>
+          <th style="border-right: black solid .25vmin; border-bottom: black solid .25vmin; margin: 0;">
+            Data Engineering
+          </th>
+          <th style="border-right: black solid .25vmin; border-bottom: black solid .25vmin; border-left: black solid .25vmin;">
+            Data Visualization
+          </th>
+          <th style="border-right: black solid .25vmin; border-bottom: black solid .25vmin; border-left: black solid .25vmin;">
+            Graph Technology
+          </th>
+          <th style="border-bottom: black solid .25vmin; border-left: black solid .25vmin;">
+            Misc.
+          </th>
+        </tr>
+        <tr style='font-size: 2.5vmin; text-align: center;'>
+          <td style="border-right: black solid .25vmin; ">
+            <br />
+            R <br />
+            Python<br /><br />
+          </td>
+          <td style="border-right: black solid .25vmin; ">
+            <br />
+            D3.js<br />
+            GSAP<br />
+            p5.js<br />&nbsp;
+          </td>
+          <td style="border-right: black solid .25vmin; ">
+            <br />
+            igraph<br />
+            TinkerPop<br />
+            Neo4j<br />&nbsp;
+          </td>
+          <td>
+            <br />
+            Vue.js<br />
+            ElasticSearch<br />
+            Inkscape<br />&nbsp;
+          </td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+</body>
+<script>
+
+let educationData = [
+  {
+    title: "<b>Yale University</b> <em>2011</em>",
+    information: [
+      {
+        name: "Degree",
+        data: [
+          "Received a Bachelors of Arts in Religious Studies with a focus in Christian Ethics and Bioethics"
+        ]
+      },
+      {
+        name: "Extracurriculars include",
+        data: [
+          "Founding member of the Yale Bioethics Society",
+          "Founding member of the Yale Sur Et Veritaal a cappella group",
+          "Rowed for the heavyweight varsity crew team",
+          "Played rugby for the university's men's rugby football club",
+          "Played waterpolo for the university's men's waterpolo club"
+        ]
+      }
+    ]
+  },
+  {
+    title: '<b>Winter Workshop on Complex Systems</b> <em>2019</em>',
+    information: [
+      {
+        name: 'Projects include',
+        data: [
+          "Pitched a project that models the pattern of opiod addicts going in and out of rehab.",
+          "Pitched a workshop on using R to model complex systems"
+        ]
+      },
+      {
+        name: 'Coursework includes',
+        data: [
+          "<b>Human Behaviour and Infection Propagation: </b> <em>Chiara Poletto</em>",
+          "<b>Human Mobility & Socio-Technical Systems: </b> <em>Pere Colet</em>",
+          "<b>Theory of Phase Transitions: </b> <em>Piotr Fronczak</em>",
+          "<b>Market Micro-Structure & Financial Networks: </b> <em>Fabrizio Lillo</em>"
+        ]
+      }
+    ]
+  },
+  {
+    title: '<b>Young Researchers of the Complex Systems Society Warm-Up</b>  <em>2018</em>',
+    information: [
+      {
+        name: 'Coursework includes',
+        data: [
+          "<b>Social Consensus: </b> <em>Andrea Baronchelli</em>",
+          "<b>Complex Contagion: </b> <em>Sandro Meloni</em>",
+          "<b>Percolation and Urban Processes: </b> <em>Elsa Arcaute</em>"
+        ]
+      }
+    ]
+  },
+  {
+    title: "<b>Sherwin B. Nuland Summer Institute in Bioethics</b> <em>2009</em>",
+    information: [
+      {
+        name: 'Coursework includes',
+        data: [
+          "<b>Bioethics & the Media: </b> <em>Carol Pollard</em>",
+          "<b>Bioethics in Film & Fiction: </b> <em>Steve Latham</em>",
+          "<b>Methods in Bioethics: </b> <em>David Smith</em>",
+          "<b>Bioethics & the Law: </b> <em>Steve Latham</em>",
+          "<b>Bioethics, Religion, & Environment: </b> <em>Christiana Z. Peppard</em>"
+          // <b>Research Ethics: </b> <em></em></li>
+        ]
+      }
+    ]
+  }
+];
+
+let talkData = [
+  {
+    title: '<b>Exploring Author Influence with Networks, NLP, and Trend Analysis</b>',
+    abstract: `There are two tools many scientometricians use when they research an academic field: social network analysis and natural language processing. Trend analysis can be used to supplement both of these tools. <br /><br />
+    Collaboration networks are a specific type of social network in which co-authored publications act as relationships between two authors These collaboration networks help researchers identify the most influential authors of a field. Examining how these networks grow over time provides insights into how and when central authors became central to their network.<br /><br />
+    Topic modelling is a branch of NLP that examines a corpus of abstracts and bins them into different topics or categories. These topics allow researchers to build intuition about a field. Examining which topic dominates a field at different times provides historical context and a sense of direction for that field.<br /><br />
+    We will integrate topic modelling into the structure of a collaboration network to explore how an author's focus changes over time. This exploration will also attempt to answer the question "how does an author's research focus influence the future work of his or her collaborators?"<br /><br />`,
+    venues: [
+      {
+        link: "http://iuni.iu.edu/nasn2018/cam/#/event/249",
+        name: "NASN 2018",
+        type: '20 minute talk'
+      },
+      {
+        link: "http://washstat.org/presentations/20181024/20181024_GASP_Program.pdf",
+        name: "GASP 2018",
+        type: "20 minute talk"
+      }
+    ]
+  },
+  {
+    title: "<b>Graphs: A Data Structure to Query</b>",
+    abstract: `When people think of graphs, they often think about mapping out social media connections. While graphs are indeed useful for mapping out social networks, they have many other practical applications. Data in the real world resemble vertices and edges more than they resemble rows and columns. This allows researchers to intuitively grasp the data modeled and stored within a graph. Graph exploration -- also known as graph traversal -- is traditionally done with a traversal language such as Gremlin or Cypher. The functionality of these traversal languages can be duplicated by combining the igraph and magrittr packages. Traversing a graph in R gives useRs access to a myriad of simple, but powerful algorithms to explore their data sets.<br /><br />
+    This talk will show why data should be explored as a graph as well as show how a graph can be traversed in R. I will do this by going through a survey of different graph traversal techniques and by showing the code patterns necessary for each of those techniques.<br /><br />`,
+    venues: [
+      {
+        link: "https://pydata.org/dc2018/schedule/presentation/53/",
+        name: "PyData DC 2018",
+        type: "45 minute talk"
+      },
+      {
+        link: "https://www.youtube.com/watch?v=-wJ0WnKqbvk",
+        name: "useR! 2018",
+        type: '20 minute talk'
+      },
+      {
+        link: "https://2018.erum.io/#talk-abstracts",
+        name: "eRum 2018",
+        type: "3 hour workshop"
+      }
+    ]
+  },
+  {
+    title: "<b>Creating, Exploring, and Visualizing Networks in R</b>",
+    abstract: `Graphs can be used to model both epidemics and natural language. They can show relationships between authors in a research field and between clients of an online shopping platform Graphs can be used in an ever-growing number of situations and and it should be no wonder why they are becoming a primary field of interest in both academic and private institutions. Luckily, there are a large number of tools to meet the demand for graph analysis. This talk will explore how the R statistical programming language and its robust open source ecosystem provides many tools for the interested researcher to create, explore and visualize networks.<br /><br />
+    We begin by addressing the fact that data in the wild needs to be extracted, cleaned, and manipulated before it can be formatted into a graph. These preliminary steps take many different forms depending on the original data input and the desired graph output. There are R libraries for scraping the web, for pulling text from pdfs, and for querying databases. If the purpose of the graph is natural language processing, then libraries for word stemming and part of speech tagging may be of use.<br /><br />
+    After preprocessing is complete and the graph is created, then the R ecosystem provides a number of libraries specific to graph analysis. The igraph and network libraries in particular have proven to be incredibly powerful with regards to both querying and modeling graphs. These tools allow the researcher to filter down the network, aggregate the information held in the nodes & edges, and identify communities within a network.<br /><br />
+    Finally, R provides a large number of plotting libraries to help the researcher explore the graph and report on his or her findings. These plotting libraries give the researcher full control over the graph visualization as well as offer 3d, interactive, and animation capabilities. There are many benefits to creating, exploring, and visualizing graphs in R. This talk is just a sample of what the R ecosystem offers. The goal is to encourage graph and network researchers to explore the R statistical programming language. <br /><br />`,
+    venues: [
+      {
+        link: 'http://ccs2018.web.auth.gr/creating-exploring-and-visualizing-networks-r',
+        name: 'CCS 2018',
+        type: "20 minute talk"
+      }
+    ]
+  },
+  {
+    title: '<b>Exploring TIMSS at the Question-Level with R</b>',
+    abstract: `The Trends in International Math and Science Study (TIMSS) is a series of international assessments given to 4th grade and 8th grade students around the world. It is administered by both the International Association for the Evaluation of Educational Achievement (IEA) and Boston College (BC) who first conducted the assessments in 1995 and re-administered them every 4 years after that (1999, 2003, 2007, 2011, and 2015). <br /><br />
+    The TIMSS dataset contains information on how every participating student answered each question on the test. The dataset also provides supplemental information on the individual student, the student's teacher, student's school, and the student's country. While the TIMSS dataset is provided in only SPSS and SAS formats, suggesting that most analysis is done in those languages.<br /><br />
+    I will use R to explore the TIMSS dataset. I will show how different tools in the R ecosystem can be used to tidy the TIMSS dataset as well as create and explore new insights in an already deep dataset. I will take a particularly deep look into how individual students and countries performed on each question. Once the dataset is cleaned, I will create different models in an attempt to predict how a student will perform on a particular question on the TIMSS tests. The process of tidying and modeling the TIMSS dataset will show how quickly and easily such tasks can be done in R.<br /><br />`,
+    venues: [
+      {
+        link: 'https://www.user2017.brussels/uploads/posterA0.pdf',
+        name: 'useR! 2017',
+        type: 'Poster presentation'
+      }
+    ]
+  }
+];
+
+let employmentData = [
+  {
+    employer: '<b>Virginia Tech Applied Research Corporation</b> <em>2017-Present</em>',
+    role: '<em>Data Visualization Engineer</em>',
+    responsibilities: [
+      "Automate data cleaning and visualization tasks",
+      "Create interactive dashboards for domain experts and analysts",
+      "Design a data pipeline that begins at the extraction process and ends at the visualization process"
+    ]
+  },
+  {
+    employer: '<b>Bodega Fundo El Mariscal</b> <em>2015-2017</em>',
+    role: '<em>Assistant Winemaker</em>',
+    responsibilities: [
+      "Aided the enologist with the fermentation and wine-preservation processes",
+      "Destemmed and pressed the grapes during the harvest.",
+      "Bottled the wine.",
+      "Sold wine at local wine festivals."
+    ]
+  },
+  {
+    employer: "<b>Elm Campus Partners, LLC</b> <em>2011-2014</em>",
+    role: "<em>Residential Tenant Manager</em>",
+    responsibilities: [
+      "Managed a portfolio of 521 residential units for Yale University.",
+      "Led the conversion from paper filing to digital filing.",
+      "Maintained the residential SQL database.",
+      "Prepared a yearly market analysis of residential rental rates."
+    ]
+  },
+  {
+    employer: "<b>Yale School of Medicine's Alzheimer's Disease Research Unit</b> <em>2010-2011</em>",
+    role: "<em>Patient Escort and Data Entry Clerk</em>",
+    responsibilities: [
+      "Escorted the patients and their caregivers from the main office to the fMRI and CAT scan locations.",
+      "Entered clinical trial data into pharmaceutical databases.",
+      "Prepared and organized clinical trial data for audits."
+    ]
+  }
+]
+
+var control = new Vue({
+  el: '#app',
+  data: {
+    educationData,
+    talkData,
+    employmentData
+  }
+})
+</script>
+</html>

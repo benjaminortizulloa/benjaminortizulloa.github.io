@@ -6,8 +6,8 @@ const store = new Vuex.Store({
     currentSlideIndex: 0,
     defaultColor: 'grey',
     currentColor: 'grey',
-    defaultText: "and I am an awesome person",
-    currentText: "and I am an awesome person"
+    defaultText: "and here is my <a href='./resume.html' target='_blank'>C.V.</a>",
+    currentText: "and here is my <a href='./resume.html' target='_blank'>C.V.</a>"
   },
   mutations: {
     nextSlide(state, payload){
