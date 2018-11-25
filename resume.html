@@ -5,29 +5,17 @@
   <script src="./resume_files/components/educationInfo.js"></script>
   <script src="./resume_files/components/talkInfo.js"></script>
   <script src="./resume_files/components/employmentInfo.js"></script>
+  <script src="./resume_files/components/techTable.js"></script>
+  <script src="./resume_files/components/nameInfo.js"></script>
   <link rel='stylesheet' href="./resume_files/assets/css/style.css" >
 </head>
 <body style="padding: 0; margin: 0">
   <div id='app'>
-    <div style="padding: 2vmin; margin: 0; background: lightgrey; border-bottom: black solid .5vmin">
-      <h1 style="text-align: center; margin: 0; font-size: 7vmin">Benjamin Ortiz Ulloa</h1>
-      <div style="text-align: center; padding: 0">
-        <div style="display: inline-block; ">
-          <p style="margin: 0 10; padding: 0; font-size: 2.5vmin;">
-            <em><b>phone:</b> (540) 969-9649</em>
-          </p>
-        </div>
-        <div style="display: inline-block; ">
-          <p style="margin: 0 10; padding: 0; font-size: 2.5vmin;">
-            <em><b>email:</b> <a href="mailto:ortizulloabenjamin@gmail.com">ortizulloabenjamin@gmail.com</a></em>
-          </p>
-        </div>
-        <div style="display: inline-block; ">
-          <p style="margin: 0 10; padding: 0; font-size: 2.5vmin;">
-            <em><b>portfolio:</b> <a href="https://benjaminortizulloa.github.io/" target="_blank">benjaminortizulloa.github.io</a></em>
-          </p>
-        </div>
-      </div>
+    <div>
+      <name-info name="Benjamin Ortiz Ulloa"
+                 phone="(540) 969-9649"
+                 email="ortizulloabenjamin@gmail.com"
+                 portfolio="https://benjaminortizulloa.github.io"></name-info>
     </div>
     <div>
       <h2 >Education</h2>
@@ -58,47 +46,7 @@
     <div>
       <h2 >Technologies</h2>
       <hr />
-      <table style="width: 95%; border-collapse: collapse; margin: 2vmin">
-        <tr style='font-size: 2.5vmin'>
-          <th style="border-right: black solid .25vmin; border-bottom: black solid .25vmin; margin: 0;">
-            Data Engineering
-          </th>
-          <th style="border-right: black solid .25vmin; border-bottom: black solid .25vmin; border-left: black solid .25vmin;">
-            Data Visualization
-          </th>
-          <th style="border-right: black solid .25vmin; border-bottom: black solid .25vmin; border-left: black solid .25vmin;">
-            Graph Technology
-          </th>
-          <th style="border-bottom: black solid .25vmin; border-left: black solid .25vmin;">
-            Misc.
-          </th>
-        </tr>
-        <tr style='font-size: 2.5vmin; text-align: center;'>
-          <td style="border-right: black solid .25vmin; ">
-            <br />
-            R <br />
-            Python<br /><br />
-          </td>
-          <td style="border-right: black solid .25vmin; ">
-            <br />
-            D3.js<br />
-            GSAP<br />
-            p5.js<br />&nbsp;
-          </td>
-          <td style="border-right: black solid .25vmin; ">
-            <br />
-            igraph<br />
-            TinkerPop<br />
-            Neo4j<br />&nbsp;
-          </td>
-          <td>
-            <br />
-            Vue.js<br />
-            ElasticSearch<br />
-            Inkscape<br />&nbsp;
-          </td>
-        </tr>
-      </table>
+      <tech-table></tech-table>
     </div>
   </div>
 

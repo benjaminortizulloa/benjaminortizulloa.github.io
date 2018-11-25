@@ -9,7 +9,7 @@ Vue.component('talk-info', {
             <td>
               <b>Abstract:</b>
             </td>
-            <td v-html="abstract"></td>
+            <td v-html="abstract" class='info'></td>
           </tr>
         </table>
       </p>
