@@ -14,12 +14,12 @@
     </p>
     <p>
       However, despite these lack of federal standards the US government passed the <a href='https://www.cms.gov/cciio/programs-and-initiatives/other-insurance-protections/mhpaea_factsheet.html' target="_blank">Mental Health Parity and Addiction Equality Act (MHPAEA)</a> which generally prevents health insurance providers from imposing less favorable benefit limitations on substance use disorder than on medical/surgical benefits.
-      Providing health care to those who need it is arguable a good thing.
+      Providing health care to those who need it is generally a good thing.
       The problem arises when we consider that the insurance payments enter an unregulated market where unqualified facilities are likely to receive this payment.
     </p>
     <p>
       This article will act as a thought experiment where we try to model what is known as the "Florida Shuffle" - a phenomenon where patients are released from rehab only to return.
-      In an unregulated market, where rehab facilites self-report their own success metrics, money from insurers can go to any rehab facility despite its effectiveness.
+      In an unregulated market, where rehab facilities self-report their own success metrics, money from insurers can go to any rehab facility with no consideration to its effectiveness.
       This means there is less incentive to "stabilize" an addict and more incentive to keep the addict "unstable" so that the patient (and his or her insurance money) can return.
     </p>
     <h2>Model</h2>
@@ -71,7 +71,24 @@
         All addicts in a rehab location, regardless of stability status, must go to a randomly selected post-rehab location.
       </li>
     </ol>
+    <h3>Interventions</h3>
+    <p>
+      If we follow the rules listed above, we eventually see a plateau representing the percent of addicts in a stable state.
+      However, we can interact with the model and introduce "interventions" in an attempt to increase the percentage of addicts in a stable state.
+      This article suggests two interventions:
+    </p>
+    <ul>
+      <li>
+        Simply removing the weakest (lowest &#x3B1;) rehab center after an arbitrary amount of time passes.
+      </li>
+      <li>
+        Replacing the weakest (lowest &#x3B1;) rehab center after an arbitrary amount of time passes with a new rehab center with an &#x3B1; somewhere between the lowest and highest &#x3B1; in the system.
+      </li>
+    </ul>
     <h2>Exploration</h2>
+    <p>
+      Below is an interactive game that simulates the behavior explained above.
+    </p>
     <div id='main'>
       <svg></svg>
     </div>
@@ -91,14 +108,18 @@ var width = 800,
     height = 800,
     agent_r = 5,
     margin = {top: 50, left: 50, right: 50, bottom: 50},
-    n_people = 200,
-    n_rehab = 5,
+    n_people = 250,
+    n_rehab = 6,
     round_interval = 10,
     turn = 1,
     rounds = 0,
     record_main = [],
-    record_unchange,
-    record_turn = [];
+    record_turn = [],
+    game = 'remove',
+    record_counterfactual,
+    edge_list_counterfactual,
+    agents_counterfactual,
+    stable_counterfactual_line;
 
 
 //====================================//
@@ -140,7 +161,7 @@ var agents = get_agents();
 
 // Make deep copy after first round but before removing first rehab
 // use this to make a counterfactual
-var agents_unchanged = JSON.parse(JSON.stringify(agents));
+// var agents_unchanged = JSON.parse(JSON.stringify(agents));
 
 //====================================//
 //------- Create Edgelist ------------//
@@ -207,12 +228,12 @@ var edge_list = get_edge_list(agents);
 
 // Make deep copy after first round but before removing first rehab
 // use this to make a counterfactual
-var edge_list_unchanged = JSON.parse(JSON.stringify(edge_list));
+// var edge_list_unchanged = JSON.parse(JSON.stringify(edge_list));
 
-function checkStability(edge){
+function checkStability(edge, agent_list){
   if(edge.to_type_next == 'rehab'){
     return(
-      Math.random() <= agents.allLocations['rehab'].filter(x => x.id == edge.to_next)[0].rate
+      Math.random() <= agent_list.allLocations['rehab'].filter(x => x.id == edge.to_next)[0].rate
     )
   }
 
@@ -221,15 +242,15 @@ function checkStability(edge){
   }
 
   return(
-    Math.random() > agents.allLocations['post'].filter(x => x.id == edge.to_next)[0].rate
+    Math.random() > agent_list.allLocations['post'].filter(x => x.id == edge.to_next)[0].rate
   )
 
 }
 
-function get_next(edge){
+function get_next(edge, agent_list){
   if(edge.to_type == 'rehab'){
     edge.to_type_next = 'post',
-    edge.to_next = agents.allLocations[edge.to_type_next][Math.floor(Math.random() * agents.allLocations[edge.to_type_next].length)].id,
+    edge.to_next = agent_list.allLocations[edge.to_type_next][Math.floor(Math.random() * agents.allLocations[edge.to_type_next].length)].id,
     edge.x_next = choose.x(edge.to_type_next)
     edge.y_next = choose.y(edge.to_type_next, edge.to_next)
     return(edge)
@@ -245,7 +266,7 @@ function get_next(edge){
 
   if(!edge.stable){
     edge.to_type_next = 'rehab'
-    edge.to_next = agents.allLocations[edge.to_type_next][Math.floor(Math.random() * agents.allLocations[edge.to_type_next].length)].id,
+    edge.to_next = agent_list.allLocations[edge.to_type_next][Math.floor(Math.random() * agents.allLocations[edge.to_type_next].length)].id,
     edge.x_next = choose.x(edge.to_type_next)
     edge.y_next = choose.y(edge.to_type_next, edge.to_next)
     return(edge)
@@ -253,16 +274,16 @@ function get_next(edge){
 
 }
 
-function change_turn(edge){
+function change_turn(edge, agent_list){
   edge.to = edge.to_next
   edge.to_type = edge.to_type_next
   edge.x = edge.x_next
   edge.y = edge.y_next
   edge.stable = edge.stable_next
 
-  edge = get_next(edge)
+  edge = get_next(edge, agent_list)
 
-  edge.stable_next = checkStability(edge)
+  edge.stable_next = checkStability(edge, agent_list)
 
   return(edge)
 }
@@ -282,21 +303,46 @@ var controlDiv = div.append('div#control')
        top: height/2 + 'px',
        position: 'absolute'})
 
-var startButton = controlDiv
- .append('button#start')
+var removalButton = controlDiv
+ .append('button.restart#removal')
+
+removalButton
  .st({
    position: 'absolute',
-   width: '50%',
+   width: '40%',
    top: "30%",
-   left: "25%",
+   left: "10%",
    height: "15%",
    fontSize: "15px"
  })
- .on('click', reset_game)
- .html('Start Game')
+ .on('click', function(){
+   game = 'remove'
+   reset_game()
+ })
+ .html('Reset Removal Game')
+
+var replacementButton = controlDiv
+  .append('button.restart#replacement')
+
+replacementButton
+  .st({
+    position: 'absolute',
+    width: '40%',
+    top: "30%",
+    right: "10%",
+    height: "15%",
+    fontSize: "15px"
+  })
+  .on('click', function(){
+    game = 'replace'
+    reset_game()
+  })
+  .html('Reset Replacement Game')
 
 var nextButton = controlDiv
  .append('button#nextRound')
+
+nextButton
  .st({
    position: 'absolute',
    width: '50%',
@@ -305,10 +351,9 @@ var nextButton = controlDiv
    height: "15%",
    fontSize: "15px"
  })
- // .at({disabled: true})
- .on('click', function(){next_round(record_main)})
+ .at({disabled: true})
+ .on('click', function(){next_round(record_main, game)})
  .html('Next Round')
-
 
 function draw_system(){
   svg.select('g#abmAnimation')
@@ -396,9 +441,37 @@ analysis_animation
   .append('text#analysis_x_axis_label')
   .translate([width/2 + width/4, width/2 - margin.bottom/4])
   .text('\u03C4')
+
 var line = d3.line()
     .x(function(d) { return analysis_xaxis(d.t); })
     .y(function(d) { return analysis_yaxis(d.p_stable); });
+
+function counterfactual_move(record_counterfactual){
+  let n_stable = edge_list_counterfactual
+    .map(el => el.stable_next)
+    .reduce((a,b) => a + b)
+
+  let analysis = {
+    t: record_counterfactual.length,
+    p_stable: n_stable/n_people
+  }
+
+  agents_counterfactual.allLocations.rehab.map(function(rehab){
+    let visitors = edge_list_counterfactual
+      .filter(x => x.to_next == rehab.id)
+
+    analysis[rehab.id + '_total'] = visitors.length
+    analysis[rehab.id + '_stable'] = visitors.filter(x => x.stable_next).length
+  })
+
+  record_counterfactual.push(analysis)
+
+  edge_list_counterfactual = edge_list_counterfactual.map(function(e){return change_turn(e, agents_counterfactual)})
+
+  stable_counterfactual_line
+    .datum(record_counterfactual)
+    .attr('d', line)
+}
 
 function move(record_full, record_temp){
   let n_stable = edge_list
@@ -427,7 +500,7 @@ function move(record_full, record_temp){
         .attr("height", rehab_axis.bandwidth() * (1 - x.recovery_rate))
     })
 
-  edge_list = edge_list.map(change_turn)
+  edge_list = edge_list.map(function(e){return change_turn(e, agents)})
 
   stable_line
     .datum(record_full)
@@ -470,13 +543,33 @@ function least_successful(record_temp){
   return(least_successful[0])
 }
 
+function most_successful(record_temp){
+  let most_successful = rate_rehabs(record_temp)
+    .filter(x => x.recovery_rate == d3.max(rate_rehabs(record_temp), d => d.recovery_rate))
+
+  return(most_successful[0])
+}
+
 function system_animate(record_full, record_temp, t_stop){
+  nextButton.at({disabled: true})
+  removalButton.at({disabled: true})
+  replacementButton.at({disabled: true})
   var demo = setInterval(function(){
     rounds += 1;
 
-    if(rounds > t_stop){clearInterval(demo)}
+    if(rounds > t_stop){
+      removalButton.at({disabled: null})
+      replacementButton.at({disabled: null})
+
+      if(turn <= n_rehab){nextButton.at({disabled: null})}
+
+      clearInterval(demo)
+    }
 
     move(record_full, record_temp)
+    if(record_counterfactual){
+      counterfactual_move(record_counterfactual)
+    }
   }, 800)
 }
 
@@ -495,6 +588,12 @@ function reset_analysis(record_full, domain_max){
   stable_line
     .datum(record_full)
     .attr('d', line)
+
+  if(record_counterfactual){
+    stable_counterfactual_line
+      .datum(record_counterfactual)
+      .attr('d', line)
+  }
 }
 
 function remove_weak_rehab(record_temp){
@@ -502,7 +601,6 @@ function remove_weak_rehab(record_temp){
   d3.select('#' + to_remove).remove()
   d3.select('#' + to_remove + '_cover').remove()
   d3.select('#' + to_remove + '_text').remove()
-  agents.allLocations.rehab = agents.allLocations.rehab.filter(x => x.id != least_successful(record_temp).id)
 
   agents.allLocations.rehab = agents.allLocations.rehab
     .filter(x => x.id != to_remove)
@@ -510,8 +608,42 @@ function remove_weak_rehab(record_temp){
   edge_list
     .filter(x => x.to_next == least_successful(record_temp).id)
     .map(function(edge) {
-      edge = get_next(edge)
-      edge.stable_next = checkStability(edge)
+      edge = get_next(edge, agents)
+      edge.stable_next = checkStability(edge, agents)
+      return(edge)
+    })
+}
+
+function replace_weak_rehab(record_temp){
+  let worst_performer = least_successful(record_temp)
+  let best_performer = most_successful(record_temp)
+
+  let delta_performance = best_performer.recovery_rate - worst_performer.recovery_rate
+
+  let new_alpha = worst_performer.recovery_rate + (Math.random() * delta_performance)
+
+  let change_performer = d3.select('#' + worst_performer.id)
+
+  d3.select('#' + worst_performer.id )
+    .st({fill: "#663399",
+         fillOpacity: .5})
+
+  d3.select('#' + worst_performer.id + '_text')
+    .selectAll('tspan')
+    .remove()
+
+  d3.select('#' + worst_performer.id + '_text')
+    .tspans([worst_performer.id.replace('_', ' '),
+             `\u03B1 = ${Math.round(new_alpha * 1000)/1000}`],
+            25)
+
+  agents.allLocations.rehab.filter(x => x.id == worst_performer.id)[0].rate = new_alpha
+
+  edge_list
+    .filter(x => x.to_next == worst_performer.id)
+    .map(function(edge) {
+
+      edge.stable_next = checkStability(edge, agents)
       return(edge)
     })
 }
@@ -519,26 +651,39 @@ function remove_weak_rehab(record_temp){
 // system_animate(record_main, record_turn, round_interval)
 
 //how do we add record_turn as a varible?
-function next_round(record_full){
+function next_round(record_full, game){
   if(turn == 1){
     system_animate(record_full, record_turn, turn * round_interval)
   }
 
-  if(turn > 1 && turn <= n_rehab){
+  if(turn == 2){
+    edge_list_counterfactual = JSON.parse(JSON.stringify(edge_list));
+    agents_counterfactual = JSON.parse(JSON.stringify(agents));
+    record_counterfactual = JSON.parse(JSON.stringify(record_main));
+
+    stable_counterfactual_line = analysis_animation
+      .append('path#counterfactual')
+      .st({fill: 'transparent', stroke: 'red'})
+      .lower()
+  }
+
+  if(turn > 1 && turn <= n_rehab && game == 'remove'){
     remove_weak_rehab(record_turn)
     record_turn = []
     reset_analysis(record_full, turn * round_interval)
     system_animate(record_full, record_turn, turn * round_interval)
   }
+
+  if(turn > 1 && turn <= n_rehab && game == 'replace'){
+    replace_weak_rehab(record_turn)
+    record_turn = []
+    reset_analysis(record_full, turn * round_interval)
+    system_animate(record_full, record_turn, turn * round_interval)
+  }
   turn += 1
-
-
 }
 
 function reset_game(){
-  d3.select('#start')
-    .at({disabled: true})
-    .html('Reset Game')
 
   agents = get_agents()
   edge_list = get_edge_list(agents)
@@ -547,10 +692,18 @@ function reset_game(){
   rounds = 0
   turn = 1;
 
+  edge_list_counterfactual = null;
+  agents_counterfactual = null;
+  record_counterfactual = null;
+
   draw_system()
 
   d3.select('g#analysis_xaxis')
     .remove()
+
+  d3.select('path#counterfactual')
+    .remove()
+
 
   analysis_xaxis
     .domain([0, turn * round_interval])
@@ -560,7 +713,7 @@ function reset_game(){
     .translate([0, height/2-margin.bottom])
     .call(d3.axisBottom(analysis_xaxis))
 
-  next_round(record_main)
+  next_round(record_main, game)
 }
 
 
