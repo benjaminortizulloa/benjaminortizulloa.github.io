@@ -8,7 +8,7 @@
     <p>
       In May 2018 <a href='https://www.youtube.com/watch?v=hWQiXv0sn9Y&t=627s' target='_blank'>John Oliver covered the topic of rehabs.</a>
       Oliver introduces the concept that addiction is an illness that should be treated as a complex condition similar to a disease or a chronic condition.
-      Indeed, there is a prevalent idea that addiction is a life-long disease and an addict who is not using any substance is "stable", but can at any time revert to being an "unstable" addict by using a substance again.
+      Indeed, there is a prevalent idea that addiction is a life-long disease and an addict who is not using any substance is "stable", but can at any time revert to an "unstable" state by using a substance again.
       A common way of treating addiction are periods in rehab.
       Rehab, he mentions, is a multi-billion dollar industry with no (US) federal standards.
     </p>
@@ -40,7 +40,7 @@
         </ol>
       </li>
       <li>
-        Rehab: facilities that an "unstable" addict would go to to get stabe. They have only one attribute:
+        Rehab: facilities that an unstable addict would go to to get stable. They have only one attribute:
         <ol>
           <li>
             &#x3B1;: the probability that unstable addicts will become stable during their time in this rehab
@@ -111,7 +111,17 @@
       If we examine the mean result for all 20 iterations we can see that both the "removal" and "replacement" games have similar effects on the system.
     </p>
     <img src='together_Readmission-Relapse-mean.png'/>
+    <br />
+    <a href='https://github.com/benjaminortizulloa/benjaminortizulloa.github.io/blob/master/proposals/addict_model/readmission-relapse-cycle.R' target='_blank'>The code for this simulation can be found on my github account.</a>
     <h2>Discussion</h2>
+    <p>
+      This model is just a thought experiment.
+      We do not currently have data on how successful a rehab facility is.
+      However, if most addicts pay for rehab services with insurance, then we can potentially get this information from the insurance providers.
+      That is, insurance companies know which addict is returning to rehab centers and which rehab center they are returning to.
+      Insurance companies have an incentive for addicts to reach a stable state because they want to minimize money they spend at rehab facilities.
+      If we can get access to this information from the insurance companies, then we can validate this model with real-world data.
+    </p>
   </div>
 
 </body>
@@ -326,7 +336,7 @@ removalButton
  .st({
    position: 'absolute',
    width: '40%',
-   top: "30%",
+   bottom: "30%",
    left: "10%",
    height: "15%",
    fontSize: "15px"
@@ -344,7 +354,7 @@ replacementButton
   .st({
     position: 'absolute',
     width: '40%',
-    top: "30%",
+    bottom: "30%",
     right: "10%",
     height: "15%",
     fontSize: "15px"
@@ -362,14 +372,50 @@ nextButton
  .st({
    position: 'absolute',
    width: '50%',
-   top: "50%",
+   bottom: "10%",
    left: "25%",
    height: "15%",
    fontSize: "15px"
  })
  .at({disabled: true})
  .on('click', function(){next_round(record_main, game)})
- .html('Next Round')
+ .html('Intervention')
+
+var key = controlDiv
+  .append('div#key')
+  .st({
+    position: 'absolute',
+    width: '80%',
+    bottom: "50%",
+    left: "10%",
+    height: "40%"
+  })
+
+key.appendMany('div', [{borderRadius: '50%', y: 10, height: 20, width: 20, background: 'red', border: '2px solid black'},
+                       {borderRadius: '50%', y: 30, height: 20, width: 20, background: 'white', border: '2px solid black'},
+                       {borderRadius: '0%', y: 60, height: 3, width: 30, background: 'black', border: ''},
+                       {borderRadius: '0%', y: 70, height: 3, width: 30, background: 'red', border: ''},
+                     ])
+  .st({left: '20%',
+       top: d => d.y + '%',
+       width: d => d.width,
+       height: d => d.height,
+       borderRadius: d => d.borderRadius,
+       position: 'absolute',
+       border: d => d.border,
+       background: d => d.background
+     })
+
+ key.appendMany('p',   [{ y: 10, text: 'unstable'},
+                        { y: 30, text: 'stable'},
+                        { y: 60, text: 'intervention'},
+                        { y: 70, text: 'counterfactual'},
+                      ])
+   .st({left: '30%',
+        top: d => (d.y - 13) + '%',
+        position: 'absolute'
+      })
+    .text(d => d.text)
 
 function draw_system(){
   svg.select('g#abmAnimation')
@@ -457,6 +503,11 @@ analysis_animation
   .append('text#analysis_x_axis_label')
   .translate([width/2 + width/4, width/2 - margin.bottom/4])
   .text('\u03C4')
+
+analysis_animation
+  .append('text#analysis_y_axis_label')
+  .at({transform: `rotate(-90), translate(-${height/2.5}, ${width/2})`})
+  .text("# stable addicts / # total addicts")
 
 var line = d3.line()
     .x(function(d) { return analysis_xaxis(d.t); })
