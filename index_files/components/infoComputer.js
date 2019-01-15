@@ -34,9 +34,9 @@ Vue.component('info-computer', {
       let mainStyle = {
         'background-color': this.color,
         'left': '20vw',
-        'top': '20vh',
+        'top': '15vh',
         "width": "60vw",
-        "height": '60vh',
+        "height": '65vh',
         'position': 'absolute',
         "border-radius": "25%",
         "border": 'black solid 1vmin',

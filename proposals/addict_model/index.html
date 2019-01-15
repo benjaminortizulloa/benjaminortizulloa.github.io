@@ -1,0 +1,567 @@
+<head>
+  <meta charset="utf-8" />
+</head>
+<body>
+  <div>
+    <h1><b>The Florida Shuffle:</b> <br />Modelling The Readmission-Relapse Cycle</h1>
+    <h2>Introduction</h2>
+    <p>
+      In May 2018 <a href='https://www.youtube.com/watch?v=hWQiXv0sn9Y&t=627s' target='_blank'>John Oliver covered the topic of rehabs.</a>
+      Oliver introduces the concept that addiction is an illness that should be treated as a complex condition similar to a disease or a chronic condition.
+      Indeed, there is a prevalent idea that addiction is a life-long disease and an addict who is not using any substance is "stable", but can at any time revert to being an "unstable" addict by using a substance again.
+      A common way of treating addiction are periods in rehab.
+      Rehab, he mentions, is a multi-billion dollar industry with no (US) federal standards.
+    </p>
+    <p>
+      However, despite these lack of federal standards the US government passed the <a href='https://www.cms.gov/cciio/programs-and-initiatives/other-insurance-protections/mhpaea_factsheet.html' target="_blank">Mental Health Parity and Addiction Equality Act (MHPAEA)</a> which generally prevents health insurance providers from imposing less favorable benefit limitations on substance use disorder than on medical/surgical benefits.
+      Providing health care to those who need it is arguable a good thing.
+      The problem arises when we consider that the insurance payments enter an unregulated market where unqualified facilities are likely to receive this payment.
+    </p>
+    <p>
+      This article will act as a thought experiment where we try to model what is known as the "Florida Shuffle" - a phenomenon where patients are released from rehab only to return.
+      In an unregulated market, where rehab facilites self-report their own success metrics, money from insurers can go to any rehab facility despite its effectiveness.
+      This means there is less incentive to "stabilize" an addict and more incentive to keep the addict "unstable" so that the patient (and his or her insurance money) can return.
+    </p>
+    <h2>Model</h2>
+    <h3>Agents</h3>
+    <p>
+      We propose an agent based model that factors three separate types of agents.
+    </p>
+    <ul>
+      <li>
+        Addicts: the agents who represent people who are addicts. They can have one of two states:
+        <ol>
+          <li>
+            Unstable: this represents an addict who has relapsed and is currently using a substance
+          </li>
+          <li>
+            Stable: this represents an addict who is not using any substances.
+          </li>
+        </ol>
+      </li>
+      <li>
+        Rehab: facilities that an "unstable" addict would go to to get stabe. They have only one attribute:
+        <ol>
+          <li>
+            &#x3B1;: the probability that unstable addicts will become stable during their time in this rehab
+          </li>
+        </ol>
+      </li>
+      <li>
+        Post-Rehab: facilities that addicts would go to after time in a rehab facility despite their status.
+        <ol>
+          <li>
+            &#x3B2;: the probability that stable addicts will relapse and become unstable again
+          </li>
+        </ol>
+      </li>
+    </ul>
+    <h3>Rules</h3>
+    <p>
+      These are the rules to the model. Rules are applied at time interval &#x1D70F; which represents 30 days or the average stay at a rehab facility.
+    </p>
+    <ol>
+      <li>
+        At each time interval &#x1D70F; an unstable addict has a &#x3B1; chance of recovering in a rehab location and a stable addict has &#x3B2; chance of becoming unstable in a post-rehab location.
+      </li>
+      <li>
+        Unstable addicts in a post-rehab location transfer over to a randomly selected rehab location.
+      </li>
+      <li>
+        All addicts in a rehab location, regardless of stability status, must go to a randomly selected post-rehab location.
+      </li>
+    </ol>
+    <h2>Exploration</h2>
+    <div id='main'>
+      <svg></svg>
+    </div>
+    <h2>Results</h2>
+    <img src='together_Readmission-Relapse.png'/>
+    <img src='together_Readmission-Relapse-mean.png'/>
+    <h2>Discussion</h2>
+  </div>
+
+</body>
+<script src="d3.v5.min.js"></script>
+<!-- <script src="https://cdn.jsdelivr.net/npm/vue@2.5.17/dist/vue.js"></script> -->
+<script src="d3-jetpack.js"></script>
+<script>
+
+var width = 800,
+    height = 800,
+    agent_r = 5,
+    margin = {top: 50, left: 50, right: 50, bottom: 50},
+    n_people = 200,
+    n_rehab = 5,
+    round_interval = 10,
+    turn = 1,
+    rounds = 0,
+    record_main = [],
+    record_unchange,
+    record_turn = [];
+
+
+//====================================//
+//----- Create agents ================//
+//====================================//
+
+function get_agents(){
+  var rehabs = [...Array(n_rehab).keys()]
+    .map(function(x){
+      return(
+        {
+          id: "Rehab_" + (x + 1),
+          type: "rehab",
+          rate: Math.random() * .8 + .1
+        }
+      )
+    })
+
+  var posts = [
+    {id: "Sober_House", type: "post", rate: Math.random() * .4 + .1},
+    {id: "Nothing", type: "post", rate: Math.random() * .4 + .5}
+  ]
+
+  var people = [...Array(n_people).keys()]
+    .map(function(x){
+      return(
+        {
+          id: x,
+          stable: false,
+          type: 'person'
+        }
+      )
+    })
+
+  return({people, allLocations: {rehab: rehabs, post: posts}})
+}
+
+var agents = get_agents();
+
+// Make deep copy after first round but before removing first rehab
+// use this to make a counterfactual
+var agents_unchanged = JSON.parse(JSON.stringify(agents));
+
+//====================================//
+//------- Create Edgelist ------------//
+//====================================//
+
+function get_edge_list(agents){
+  var edge_list = agents.people
+    .map(x =>{
+       info ={
+         from: x.id,
+         to: "Nothing",
+         to_type: "post",
+         stable: x.stable,
+         x: choose.x('post'),
+         y: choose.y('post', 'Nothing')
+       }
+
+       info.to_next = info.to
+       info.to_type_next = info.to_type
+       info.x_next = info.x
+       info.y_next = info.y
+       info.stable_next = info.stable
+
+      return(info)
+    })
+
+  return(edge_list)
+}
+
+var abm_xaxis = d3.scaleBand()
+  .domain(['rehab', 'post'])
+  .range([margin.left, width/2 - margin.right])
+  .paddingInner(.1)
+
+var rehab_axis = d3.scaleBand()
+  .domain(agents.allLocations.rehab.map(x => x.id))
+  .range([margin.top, height - margin.top])
+  .paddingInner(.1)
+
+var post_axis = d3.scaleBand()
+  .domain(agents.allLocations.post.map(x => x.id))
+  .range([margin.top, height - margin.bottom])
+  .paddingInner(.1)
+
+var analysis_xaxis = d3.scaleLinear()
+  .domain([0, turn * round_interval])
+  .range([margin.left + width/2, width - margin.right])
+
+var analysis_yaxis = d3.scaleLinear()
+  .domain([0, 1])
+  .range([height/2-margin.bottom, margin.top])
+
+var abm_yaxis = {
+  rehab: rehab_axis,
+  post: post_axis
+}
+
+var choose = {
+  x: type => Math.random() * (abm_xaxis.bandwidth() - 2 * agent_r) + abm_xaxis(type) + agent_r,
+  y: (type, id) => Math.random() * (abm_yaxis[type].bandwidth() - 2 * agent_r) + abm_yaxis[type](id) + agent_r
+}
+
+var edge_list = get_edge_list(agents);
+
+// Make deep copy after first round but before removing first rehab
+// use this to make a counterfactual
+var edge_list_unchanged = JSON.parse(JSON.stringify(edge_list));
+
+function checkStability(edge){
+  if(edge.to_type_next == 'rehab'){
+    return(
+      Math.random() <= agents.allLocations['rehab'].filter(x => x.id == edge.to_next)[0].rate
+    )
+  }
+
+  if(!edge.stable){
+    return(edge.stable)
+  }
+
+  return(
+    Math.random() > agents.allLocations['post'].filter(x => x.id == edge.to_next)[0].rate
+  )
+
+}
+
+function get_next(edge){
+  if(edge.to_type == 'rehab'){
+    edge.to_type_next = 'post',
+    edge.to_next = agents.allLocations[edge.to_type_next][Math.floor(Math.random() * agents.allLocations[edge.to_type_next].length)].id,
+    edge.x_next = choose.x(edge.to_type_next)
+    edge.y_next = choose.y(edge.to_type_next, edge.to_next)
+    return(edge)
+  }
+
+  if(edge.stable){
+    edge.to_type_next = 'post'
+    edge.to_next = edge.to
+    edge.x_next = edge.x
+    edge.y_next = edge.y
+    return(edge)
+  }
+
+  if(!edge.stable){
+    edge.to_type_next = 'rehab'
+    edge.to_next = agents.allLocations[edge.to_type_next][Math.floor(Math.random() * agents.allLocations[edge.to_type_next].length)].id,
+    edge.x_next = choose.x(edge.to_type_next)
+    edge.y_next = choose.y(edge.to_type_next, edge.to_next)
+    return(edge)
+  }
+
+}
+
+function change_turn(edge){
+  edge.to = edge.to_next
+  edge.to_type = edge.to_type_next
+  edge.x = edge.x_next
+  edge.y = edge.y_next
+  edge.stable = edge.stable_next
+
+  edge = get_next(edge)
+
+  edge.stable_next = checkStability(edge)
+
+  return(edge)
+}
+
+var svg = d3.select('svg')
+  .at({width, height})
+
+var div = d3.select('div#main')
+  .st({width: width + 'px',
+       height: height + 'px',
+       position: 'relative'})
+
+var controlDiv = div.append('div#control')
+  .st({width: width/2 + 'px',
+       height: height/2 + 'px',
+       left: width/2 + 'px',
+       top: height/2 + 'px',
+       position: 'absolute'})
+
+var startButton = controlDiv
+ .append('button#start')
+ .st({
+   position: 'absolute',
+   width: '50%',
+   top: "30%",
+   left: "25%",
+   height: "15%",
+   fontSize: "15px"
+ })
+ .on('click', reset_game)
+ .html('Start Game')
+
+var nextButton = controlDiv
+ .append('button#nextRound')
+ .st({
+   position: 'absolute',
+   width: '50%',
+   top: "50%",
+   left: "25%",
+   height: "15%",
+   fontSize: "15px"
+ })
+ // .at({disabled: true})
+ .on('click', function(){next_round(record_main)})
+ .html('Next Round')
+
+
+function draw_system(){
+  svg.select('g#abmAnimation')
+    .remove()
+
+  abm_animation = svg
+    .append('g#abmAnimation')
+    .at({width: width/2,
+         height: height})
+
+  abm_animation
+    .appendMany('rect', agents.allLocations.rehab.concat(agents.allLocations.post))
+    .at({x: (d) => abm_xaxis(d.type),
+         y: (d) => d.type == 'rehab' ? rehab_axis(d.id) : post_axis(d.id),
+         width: abm_xaxis.bandwidth(),
+         height: (d) => d.type == "rehab" ? rehab_axis.bandwidth() : post_axis.bandwidth(),
+         id: d => d.id
+       })
+    .st({
+      stroke: 'black',
+      fill: "lightgrey"
+    })
+
+  abm_animation
+    .appendMany('rect', agents.allLocations.rehab.concat(agents.allLocations.post))
+    .at({x: (d) => abm_xaxis(d.type),
+         y: (d) => d.type == 'rehab' ? rehab_axis(d.id) : post_axis(d.id),
+         width: abm_xaxis.bandwidth(),
+         height: (d) => d.type == "rehab" ? rehab_axis.bandwidth() : post_axis.bandwidth(),
+         id: d => d.id + "_cover"
+       })
+    .st({
+      stroke: 'none',
+      fill: "white"
+    })
+
+  abm_animation
+    .appendMany('text', agents.allLocations.rehab.concat(agents.allLocations.post))
+    .translate( d => [abm_xaxis(d.type) + (abm_xaxis.bandwidth()/2),
+                      d.type == 'rehab' ? rehab_axis(d.id) + (rehab_axis.bandwidth()/2) : post_axis(d.id) + (post_axis.bandwidth()/2)])
+    .at({
+         stroke: 'black',
+         textAnchor: 'middle',
+         id: d => d.id + '_text'
+        })
+    .tspans(d => [d.id.replace('_', ' '),
+                  d.type == 'rehab' ? `\u03B1 = ${Math.round(d.rate * 1000)/1000}` : `\u03B2 = ${Math.round(d.rate * 1000)/1000}`],
+            25)
+
+  abm_agents = abm_animation
+   .appendMany('circle.addictAgent', edge_list)
+   .at({cx: d => d.x,
+        cy: d => d.y,
+        r: 5,
+        fill: 'red',
+        fillOpacity: .9,
+        stroke: 'black'
+   })
+}
+
+draw_system()
+
+
+var analysis_animation = svg
+  .append('g#analysisAnimation')
+  .at({width: width/2,
+       height: height/2,
+       x: width/2})
+
+var stable_line = analysis_animation
+  .append('path')
+  .st({fill: 'transparent', stroke: 'black'})
+
+analysis_animation
+  .append('g#analysis_xaxis')
+  .translate([0, height/2-margin.bottom])
+  .call(d3.axisBottom(analysis_xaxis))
+
+analysis_animation
+  .append('g')
+  .translate([width/2 + margin.left,0])
+  .call(d3.axisLeft(analysis_yaxis))
+
+analysis_animation
+  .append('text#analysis_x_axis_label')
+  .translate([width/2 + width/4, width/2 - margin.bottom/4])
+  .text('\u03C4')
+var line = d3.line()
+    .x(function(d) { return analysis_xaxis(d.t); })
+    .y(function(d) { return analysis_yaxis(d.p_stable); });
+
+function move(record_full, record_temp){
+  let n_stable = edge_list
+    .map(el => el.stable_next)
+    .reduce((a,b) => a + b)
+
+  let analysis = {
+    t: record_full.length,
+    p_stable: n_stable/n_people
+  }
+
+  agents.allLocations.rehab.map(function(rehab){
+    let visitors = edge_list
+      .filter(x => x.to_next == rehab.id)
+
+    analysis[rehab.id + '_total'] = visitors.length
+    analysis[rehab.id + '_stable'] = visitors.filter(x => x.stable_next).length
+  })
+
+  record_full.push(analysis)
+  record_temp.push(analysis)
+
+  rate_rehabs(record_temp)
+    .map(function(x){
+      d3.select('#' + x.id + '_cover')
+        .attr("height", rehab_axis.bandwidth() * (1 - x.recovery_rate))
+    })
+
+  edge_list = edge_list.map(change_turn)
+
+  stable_line
+    .datum(record_full)
+    .attr('d', line)
+
+  abm_agents
+    .data(edge_list)
+    .transition()
+    .duration(400)
+    .at({cx: d=> d.x_next,
+         cy: d=> d.y_next})
+    .on('end', function(){
+      d3.selectAll('circle')
+        .style('fill', d => d.stable_next ? 'white' : 'red')
+    })
+}
+
+function rate_rehabs(record_temp){
+  let info = agents.allLocations.rehab.map(function(rehab){
+    let tot = record_temp.map(x => x[rehab.id + '_total'])
+      .reduce((a,b) => a + b);
+
+    let stable = record_temp.map(x => x[rehab.id + '_stable'])
+      .reduce((a,b) => a + b);
+
+    let recovery_rate = !tot ? 0 : stable/tot;
+
+    let info = {id: rehab.id, recovery_rate};
+
+    return(info)
+  })
+
+  return(info)
+}
+
+function least_successful(record_temp){
+  let least_successful = rate_rehabs(record_temp)
+    .filter(x => x.recovery_rate == d3.min(rate_rehabs(record_temp), d => d.recovery_rate))
+
+  return(least_successful[0])
+}
+
+function system_animate(record_full, record_temp, t_stop){
+  var demo = setInterval(function(){
+    rounds += 1;
+
+    if(rounds > t_stop){clearInterval(demo)}
+
+    move(record_full, record_temp)
+  }, 800)
+}
+
+function reset_analysis(record_full, domain_max){
+  d3.select('g#analysis_xaxis')
+    .remove()
+
+  analysis_xaxis
+    .domain([0, domain_max])
+
+  analysis_animation
+    .append('g#analysis_xaxis')
+    .translate([0, height/2-margin.bottom])
+    .call(d3.axisBottom(analysis_xaxis))
+
+  stable_line
+    .datum(record_full)
+    .attr('d', line)
+}
+
+function remove_weak_rehab(record_temp){
+  let to_remove = least_successful(record_temp).id
+  d3.select('#' + to_remove).remove()
+  d3.select('#' + to_remove + '_cover').remove()
+  d3.select('#' + to_remove + '_text').remove()
+  agents.allLocations.rehab = agents.allLocations.rehab.filter(x => x.id != least_successful(record_temp).id)
+
+  agents.allLocations.rehab = agents.allLocations.rehab
+    .filter(x => x.id != to_remove)
+
+  edge_list
+    .filter(x => x.to_next == least_successful(record_temp).id)
+    .map(function(edge) {
+      edge = get_next(edge)
+      edge.stable_next = checkStability(edge)
+      return(edge)
+    })
+}
+
+// system_animate(record_main, record_turn, round_interval)
+
+//how do we add record_turn as a varible?
+function next_round(record_full){
+  if(turn == 1){
+    system_animate(record_full, record_turn, turn * round_interval)
+  }
+
+  if(turn > 1 && turn <= n_rehab){
+    remove_weak_rehab(record_turn)
+    record_turn = []
+    reset_analysis(record_full, turn * round_interval)
+    system_animate(record_full, record_turn, turn * round_interval)
+  }
+  turn += 1
+
+
+}
+
+function reset_game(){
+  d3.select('#start')
+    .at({disabled: true})
+    .html('Reset Game')
+
+  agents = get_agents()
+  edge_list = get_edge_list(agents)
+  record_main = []
+  record_turn = []
+  rounds = 0
+  turn = 1;
+
+  draw_system()
+
+  d3.select('g#analysis_xaxis')
+    .remove()
+
+  analysis_xaxis
+    .domain([0, turn * round_interval])
+
+  analysis_animation
+    .append('g#analysis_xaxis')
+    .translate([0, height/2-margin.bottom])
+    .call(d3.axisBottom(analysis_xaxis))
+
+  next_round(record_main)
+}
+
+
+</script>
