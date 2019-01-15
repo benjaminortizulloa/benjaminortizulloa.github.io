@@ -88,12 +88,28 @@
     <h2>Exploration</h2>
     <p>
       Below is an interactive game that simulates the behavior explained above.
+      There are two different games that can be played: one for each intervention described above.
+      The system we are analyzing with an intervention is shown in black.
+      A counterfactual analyss is also provided in red.
+      The counterfactual represents the system as if no intervention took place.
+      The &#x3B1; and &#x3B2; for each rehab and post-rehab are randomly chosen for each game.
     </p>
     <div id='main'>
       <svg></svg>
     </div>
     <h2>Results</h2>
+    <p>
+      We ran a controlled simulation similar to the one shown above.
+      The controlled simulation contained 1000 addicts, 20 rehab centers, and 2 post-rehab centers.
+      We conducted the simulation over 100 intervals. The simulation was repeated 20 times.
+      The rehabs each had a randomly selected &#x3B1; between .2 and .8.
+      The two post-rehab facilities had a &#x3B2; of .2 and .8.
+      The &#x3B1; and &#x3B2; for the rehab and post-rehab facilities stay consistent over all 20 iterations.
+    </p>
     <img src='together_Readmission-Relapse.png'/>
+    <p>
+      If we examine the mean result for all 20 iterations we can see that both the "removal" and "replacement" games have similar effects on the system.
+    </p>
     <img src='together_Readmission-Relapse-mean.png'/>
     <h2>Discussion</h2>
   </div>
