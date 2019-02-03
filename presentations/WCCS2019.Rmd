@@ -1,0 +1,429 @@
+---
+title: 'WCSS 2019: <br>Exploring Twitter Trolls'
+author: "Benjamin Ortiz Ulloa"
+date: "2/3/2019"
+output: ioslides_presentation
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(igraph)
+```
+
+# Introduction to 2016 Russian Twitter Troll Dataset
+
+## According to the US Office of the Director of National Intelligence:s
+
+- Russian President Vladimir Putin ordered an influence campaign in 2016 aimed at the US presidential election. Russia’s goals were to undermine public faith in the US democratic process, denigrate Secretary Clinton, and harm her electability and potential presidency.
+- Moscow's influence campaign followed a Russian messaging strategy that blends covert intelligence operations—such as cyber activity—with overt efforts by Russian Government agencies, state-funded media, third-party intermediaries, and paid social media users or "trolls."
+- The House Intelligence released a list of 2,752 false Twitter accounts believed to be operated by a known Russian troll factory – the Internet Research Agency.
+
+## Recovered Twitter Data
+
+- The trolls were removed from Twitter once they were identified.
+- NBC News was able to recover the tweets posted by the trolls and made the data public.
+- NBC collaborated with Neo4j to conduct network analysis and answer the question - how did these trolls succeed?
+
+## Troll Personas
+
+**Three types of Profiles:**
+
+- The Typical American Citizen
+- The Local Media Outlet
+- The Local Political Party
+
+**Three main sentiments:**
+
+- Focus on Right Wing Politics (Positive)
+- Focus on Left Wing Politics (Negative)
+- Focus on Black Lives Matter (Positive)
+
+## Internal Workings
+
+- There were only a handful of trolls that created their own content
+- A majority of the trolls simply retweeted others in order to amplify their message
+
+# Reproduce these results in R & igraph
+
+## How to make a graph: Edge List
+
+```{r, echo=F, message=F}
+tweets <- readr::read_csv('../../igraph-data-days-texas-2019/russian-troll-tweets/tweets.csv')
+
+retweet_network <- tweets  %>% 
+  dplyr::select(user_key, text) %>%
+  dplyr::filter(stringr::str_detect(text, '^RT\\s')) %>%
+  dplyr::mutate(retweeted = stringr::str_extract(text, '(?<=@)[^:]+(?=:)') %>%
+                  stringr::str_to_lower()) %>%
+  dplyr::filter(!is.na(retweeted)) %>%
+  dplyr::select(user_key, retweeted, text) %>%
+  dplyr::mutate(text = stringr::str_replace_all(text, "\\r|\\n", '') ) %>%
+  dplyr::distinct()
+
+retweet_network %>%
+  head() %>%
+  knitr::kable()
+```
+
+## How to make a graph: Aggregation
+
+```{r, echo = F}
+filter_n <- 5
+
+retweet_network_wt <- retweet_network %>%
+  dplyr::count(user_key, retweeted, sort = T) %>%
+  dplyr::filter(n >= filter_n) 
+
+retweet_network_wt %>%
+  head() %>%
+  knitr::kable()
+```
+
+## Visualize the Graph
+
+```{r}
+g_rtwt <- igraph::graph_from_data_frame(retweet_network_wt, T) %>%
+  {V(.)$pr <- igraph::page_rank(., directed = T)$vector; .} %>%
+  {temp <- igraph::as_data_frame(., 'both'); igraph::graph_from_data_frame(temp$edges, T, dplyr::arrange(temp$vertices, pr))} %>%
+  {
+    set.seed(4321); 
+    layout = igraph::layout_nicely(.);
+    V(.)$x <- layout[,1];
+    V(.)$y <- layout[,2];
+    .}
+
+g_rtwt %>%
+  plot(
+    vertex.size = 1,
+    vertex.label = '',
+    edge.arrow.size = .05,
+    edge.width = .25,
+    asp = 0, 
+    main = stringr::str_glue('Troll Retweet Network:\n {vcount(.)} Trolls and {ecount(.)} Connections'),
+    sub = stringr::str_glue('Connections of less than {filter_n} retweets were removed.'))
+```
+
+## Calculate (Directed) PageRank
+
+```{r, echo = F}
+g_rtwt %>%
+  plot(
+    vertex.size = V(.)$pr/max(V(.)$pr) * 5,
+    vertex.label = '',
+    edge.arrow.size = .05,
+    edge.width = .25,
+    asp = 0, 
+    main = stringr::str_glue('Troll Retweet Network:\n {vcount(.)} Trolls and {ecount(.)} Connections'),
+    sub = stringr::str_glue("Connections of less than {filter_n} retweets were removed.\nSize corresponds to troll's page rank"))
+```
+
+## Analyze Top PageRanked Trolls
+```{r, echo =F}
+
+original_tweets <- tweets %>%
+  dplyr::filter(user_key %in% retweet_network$retweeted)  %>%
+  dplyr::select(user_key, text) %>%
+  dplyr::filter(!stringr::str_detect(text, '^RT @')) %>%
+  dplyr::distinct()
+
+original_tweets_ag <- original_tweets %>%
+  dplyr::count(user_key) %>%
+  dplyr::rename(OriginalTweets = n)
+
+tweets_ag <- tweets %>%
+  dplyr::select(user_key, text) %>%
+  dplyr::distinct() %>%
+  dplyr::count(user_key) %>%
+  dplyr::rename(AllTweets = n)
+
+g_rtwt %>%
+  {igraph::V(.)$InStrength <- igraph::strength(., mode = 'in', weights = E(.)$n); .} %>%
+  {igraph::V(.)$OutStrength <- igraph::strength(., mode = 'out', weights = E(.)$n); .} %>%
+  igraph::as_data_frame('vertices') %>%
+  dplyr::arrange(dplyr::desc(pr)) %>%
+  head(10) %>%
+  dplyr::select(name, PageRank = pr, InStrength, OutStrength) %>%
+  dplyr::left_join(original_tweets_ag, by = c('name' = 'user_key')) %>%
+  dplyr::left_join(tweets_ag, by = c('name' = 'user_key')) %>%
+  knitr::kable()
+```
+
+## Trolls Retweeted Non-Trolls
+
+Some twitter handles were not counted in the data because they were not among the list of twitter trolls.
+
+- **rt_com** and **rt_america** are part of the [RT Network](https://en.wikipedia.org/wiki/RT_(TV_network)). A moscow based television network that used to be called "Russia Today"
+- **chiefplan1**, **joyannreid**, **owillis** are left-wing news personalities.
+- **spiegelonline** is a german news website
+
+## Remove Non-Trolls and Recalculate
+
+```{r, echo = F, message = F}
+retweet_network_trolls <- retweet_network %>%
+  dplyr::distinct()  %>%
+  dplyr::filter(retweeted %in% user_key) %>%
+  dplyr::filter(retweeted %in% user_key) %>%
+  dplyr::filter(retweeted %in% user_key) 
+
+retweet_network_trolls_wt <- retweet_network_trolls %>%
+  dplyr::count(user_key, retweeted, sort = T)
+
+retweet_trolls_nl <- retweet_network_trolls %>%
+  dplyr::count(user_key) %>%
+  dplyr::rename(RetweetedTrolls = n) %>%
+  dplyr::left_join(original_tweets_ag) %>%
+  dplyr::arrange(desc(OriginalTweets))
+
+g_rtwt_troll <- igraph::graph_from_data_frame(retweet_network_trolls_wt, T, retweet_trolls_nl) %>%
+  {set.seed(4321); l <- igraph::layout_nicely(.); V(.)$x = l[,1]; V(.)$y = l[,2]; .} %>%
+  {V(.)$PageRank <- igraph::page_rank(.)$vector; .} %>%
+  {V(.)$InStrength <- igraph::strength(., mode = 'in', weights = E(.)$n); .} %>%
+  {V(.)$OutStrength <- igraph::strength(., mode = 'out', weight = E(.)$n); .} %>%
+  {V(.)$size <- igraph::V(.)$PageRank/max(igraph::V(.)$PageRank)* 5 + 3; .} %>%
+  {V(.)$label <- ''; .} %>%
+  {E(.)$arrow.size = .25; .} %>%
+  {E(.)$width = .1; .} %>%
+  {.$asp = 0; .}
+
+plot(g_rtwt_troll)
+```
+
+## Analyze Cleaned Network
+
+```{r, echo = F}
+g_rtwt_troll %>%
+  igraph::as_data_frame('vertices') %>%
+  dplyr::arrange(dplyr::desc(PageRank)) %>%
+  head(10) %>%
+  dplyr::select(-x, -y) %>%
+  knitr::kable()
+```
+
+## Community Detection (Walktrap)
+
+```{r, echo = F}
+set.seed(4321)
+troll_community <- igraph::walktrap.community(g_rtwt_troll)
+troll_groups <- igraph::groups(troll_community)
+V(g_rtwt_troll)$community <- troll_community$membership
+community_pal <- scales::brewer_pal(palette = 'Dark2')(length(troll_groups))
+names(community_pal) <- as.character(1:length(community_pal))
+V(g_rtwt_troll)$color <- purrr::map_chr(V(g_rtwt_troll)$community, ~community_pal[.x])
+plot(g_rtwt_troll)
+```
+
+## What Hashtags do these groups use?
+
+```{r}
+tweets_w_hashtags <- tweets %>%
+  dplyr::select(user_key, hashtags) %>%
+  dplyr::filter(hashtags != '[]') 
+
+community_hashtags <- purrr::map(troll_groups, function(x){
+  tweets_w_hashtags %>%
+    dplyr::filter(user_key %in% x) %>%
+    .$hashtags %>%
+    purrr::map(~jsonlite::fromJSON(.x)) %>%
+    unlist() %>%
+    table() %>%
+    sort(T) %>%
+    tibble::enframe('hashtag', 'count') %>%
+    head(10)
+}) %>%
+  tibble::enframe('community', 'data') %>%
+  tidyr::unnest() 
+
+community_hashtags %>%
+  dplyr::mutate(hashtag = purrr::map2_chr(hashtag, community, ~paste0(paste0(rep(' ', as.numeric(.y)), collapse = ''), .x))) %>%
+  dplyr::mutate(hashtag = factor(hashtag, unique(hashtag))) %>%
+  ggplot2::ggplot(ggplot2::aes(x = hashtag, y = count, fill = community)) +
+  ggplot2::geom_col() +
+  ggplot2::facet_wrap(~community, scales = 'free') +
+  ggplot2::scale_fill_manual(values = community_pal) +
+  ggplot2::coord_flip()+
+  ggplot2::theme_bw() +
+  ggplot2::theme(legend.position="none") 
+```
+
+# Explore the usage of hashtags
+
+## Create a bipartite graph
+
+```{r, echo = F}
+tweet_hashtag <- tweets %>% 
+  dplyr::filter(hashtags != '[]') %>% #this represents a tweet with no hashtags
+  dplyr::mutate(hashtags = purrr::map(hashtags, jsonlite::fromJSON)) %>% #the stored info is a json file
+  dplyr::select(user_key, hashtags, text) %>% 
+  tidyr::unnest() 
+
+head(tweet_hashtag) %>%
+  dplyr::select(user_key, hashtags) %>%
+  knitr::kable()
+```
+
+## Aggregate Bipartite
+
+```{r, echo = F}
+tweet_hashtag_edges <- tweet_hashtag %>%
+  dplyr::select(-text) %>%
+  dplyr::count(user_key, hashtags, sort = T) %>% #aggregatign user-hashtag occurances
+  dplyr::rename(weight = n) %>%
+  dplyr::mutate(type = 'used_hashtag',
+         user_key = paste0('@', user_key), #prevent duplicate node names
+         hashtags = paste0('#', hashtags) %>% tolower() #prevent duplicate node names
+         ) 
+
+head(tweet_hashtag_edges) %>%
+  knitr::kable()
+```
+
+## Create Graph
+
+```{r, echo = F}
+tweet_hashtag_nodes <- dplyr::bind_rows(
+  tibble::tibble(
+    label = tweet_hashtag_edges$hashtags %>% unique(),
+    type = 'hashtag',
+    color = 'lightgrey',
+    size = 3
+  ),
+    tibble::tibble(
+    label = tweet_hashtag_edges$user_key %>% unique(),
+    type = 'user',
+    color = 'purple',
+    size = 3
+  )
+)
+
+tweet_hashtag_g <- tweet_hashtag_edges %>%
+  graph_from_data_frame(vertices = tweet_hashtag_nodes)
+
+tweet_hashtag_g_filtered <- tweet_hashtag_g %>%
+  {. - E(.)[weight <= 5]} %>%
+  {. - V(.)[degree(.) == 0]} %>%
+  {.$asp <- 0; .} %>%
+  {E(.)$width <- .1; .}
+
+tweet_hashtag_g_filtered %>%
+  {set.seed(4321); .$layout <- igraph::layout.bipartite(., type = V(.)$type == 'hashtag'); .} %>%
+  plot( 
+     vertex.label = '',
+     edge.arrow.mode = '-',
+     main = stringr::str_glue("Troll - Hashtag Bipartite\n{V(.)[type == 'user'] %>% length()} Trolls and {V(.)[type == 'hashtag'] %>% length()} Hashtags"),
+     sub = "Connections where Trolls used a hashtag less than 6 times were removed"
+     )
+```
+
+## Project Bipartite to get 
+
+```{r, echo = F, message = F, warning= F}
+tweet_hashtag_g_filtered %>%
+  {
+    V(.)$type <- V(.)$type == 'user'; #boolean type is necessary for bipartite projection
+    V(.)$degree <- degree(.);
+    V(.)$weighted_degree <- strength(.);
+    .
+  } %>%
+  igraph::bipartite_projection() %>%
+  {
+    . <- purrr::map(., function(x){
+      V(x)$component <-igraph::components(x)$membership;
+      return(x)
+    })
+    hashtag_g <<- .$proj1; #projection 1 is type FALSE
+    user_g <<- .$proj2; #projection 2 is type TRUE
+  }
+
+set.seed(4321)
+l <- layout_nicely(hashtag_g)
+V(hashtag_g)$x <- l[,1]
+V(hashtag_g)$y
+plot(hashtag_g, vertex.size = 3, vertex.label = '')
+```
+
+## Take a sample of each component
+
+```{r, echo = F}
+hashtag_g_components <- igraph::components(hashtag_g)
+
+hashtag_g_components %>% 
+  igraph::groups() %>%
+  purrr::map(function(x){
+    tmp <- V(hashtag_g)[name %in% x];
+    tmpd <- tmp$degree
+    names(tmpd) <- tmp$name;
+    tmpd %>%
+      sort(T) %>%
+      head() %>%
+      names() 
+    }) %>%
+  tibble::enframe('Component', 'Hashtag') %>%
+  tidyr::unnest() 
+```
+
+## Examine largest component
+
+```{r, echo = F}
+largestComponent <- hashtag_g_components %>%
+  igraph::groups() %>%
+  {
+    maxL <- max(purrr::map_dbl(., length));
+    .[purrr::map_lgl(., function(x){length(x) == maxL})] %>%
+      unlist()
+  } %>%
+  {hashtag_g - igraph::V(hashtag_g)[!name %in% .]}
+  
+
+plot(largestComponent, vertex.size = 3, vertex.label = '', edge.width = .1)
+```
+
+## Community Detection and PageRank
+
+```{r, echo =F}
+hashtag_community <- igraph::walktrap.community(largestComponent)
+hashtag_groups <- igraph::groups(hashtag_community)
+V(largestComponent)$community <- hashtag_community$membership
+V(largestComponent)$PageRank <- page.rank(largestComponent)$vector
+
+hashtag_pal <- scales::brewer_pal(palette = 'Dark2')(length(hashtag_groups))
+names(hashtag_pal) <- as.character(1:length(hashtag_pal))
+V(largestComponent)$color <- purrr::map_chr(V(largestComponent)$community, ~hashtag_pal[.x])
+
+
+largestComponent <- largestComponent %>%
+  {
+    tmp <- as_data_frame(., 'both');
+    tmp$vertices <- dplyr::arrange(tmp$vertices, PageRank);
+    igraph::graph_from_data_frame(tmp$edges, F, tmp$vertices)
+  }
+
+largestComponent %>%
+  plot(
+    vertex.label= '',
+    vertex.size = V(.)$PageRank/max(V(.)$PageRank) * 5 + 2,
+    edge.width = .1,
+    asp = 0
+  )
+```
+
+## Sample of Hashtags
+
+```{r, echo = F}
+
+largestComponent %>%
+  igraph::as_data_frame('vertices') %>%
+  dplyr::group_by(community) %>%
+  dplyr::top_n(10, PageRank) %>%
+  dplyr::ungroup() %>%
+  dplyr::mutate(name = purrr::map2_chr(name, community, ~paste0(paste0(rep(' ', as.numeric(.y)), collapse = ''), .x))) %>%
+  dplyr::mutate(name = factor(name, unique(name))) %>%
+  ggplot2::ggplot(ggplot2::aes(x = name, y = PageRank, fill = as.character(community))) +
+  ggplot2::geom_col() +
+  ggplot2::facet_wrap(~community, scales = 'free') +
+  ggplot2::scale_fill_manual(values = hashtag_pal) +
+  ggplot2::coord_flip()+
+  ggplot2::theme_bw() +
+  ggplot2::theme(legend.position="none")
+```
+
+# Using Simple Topic Models
