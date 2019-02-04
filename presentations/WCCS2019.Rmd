@@ -7,22 +7,33 @@ output: ioslides_presentation
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
+library(tidytext)
+library(stm)
 library(igraph)
 ```
 
 # Introduction to 2016 Russian Twitter Troll Dataset
 
-## According to the US Office of the Director of National Intelligence:s
+## According to the US Office of the Director of National Intelligence
 
 - Russian President Vladimir Putin ordered an influence campaign in 2016 aimed at the US presidential election. Russia’s goals were to undermine public faith in the US democratic process, denigrate Secretary Clinton, and harm her electability and potential presidency.
 - Moscow's influence campaign followed a Russian messaging strategy that blends covert intelligence operations—such as cyber activity—with overt efforts by Russian Government agencies, state-funded media, third-party intermediaries, and paid social media users or "trolls."
 - The House Intelligence released a list of 2,752 false Twitter accounts believed to be operated by a known Russian troll factory – the Internet Research Agency.
+
+<div class="notes">
+-In January 2017, the ofice of the director of national intelligence released a report claiming that Russia interfered with the the 2016 US election with an intent to dissuade voters from voting for Hillary Clinton and undermine public faith in the US democratic proces. 
+-A russian company, the Internet Research Agency, was named as a company that tried to achieve this goal with the use of twitter trolls.
+</div>
 
 ## Recovered Twitter Data
 
 - The trolls were removed from Twitter once they were identified.
 - NBC News was able to recover the tweets posted by the trolls and made the data public.
 - NBC collaborated with Neo4j to conduct network analysis and answer the question - how did these trolls succeed?
+
+<div class="notes">
+-Thanks to NBC, Data about the trolls' tweets and profiles are now public for people to explore. 
+</div>
 
 ## Troll Personas
 
@@ -38,10 +49,20 @@ library(igraph)
 - Focus on Left Wing Politics (Negative)
 - Focus on Black Lives Matter (Positive)
 
+<div class="notes">
+-The goal of these accounts was to blend into the US twitter ecosystem as "one of us".
+-The idea people are more likely to agree with a troll's claims if their personas match.
+-Republicans are more likely to agree with republican style trolls and those who are part of the black lives matter movement are more likely to agree with trolls that claim to share their sentiment.
+</div>
+
 ## Internal Workings
 
 - There were only a handful of trolls that created their own content
 - A majority of the trolls simply retweeted others in order to amplify their message
+<div class="notes">
+-These trolls were able to create an amplification network. 
+-It was more important to amplify a single trolls tweet than it was to create a large number of original content creators. 
+</div>
 
 # Reproduce these results in R & igraph
 
@@ -65,6 +86,11 @@ retweet_network %>%
   knitr::kable()
 ```
 
+<div class="notes">
+-one of R's native data structures is a data frame - a table like structure
+-if we want to create a graph, we need to have a data frame in which the first two columns of a data frame represent the nodes the edges are connecting. 
+</div>
+
 ## How to make a graph: Aggregation
 
 ```{r, echo = F}
@@ -78,6 +104,12 @@ retweet_network_wt %>%
   head() %>%
   knitr::kable()
 ```
+
+<div class="notes">
+-for now, we won't focus on content, but the number of retweets.
+-R has a package called dplyr that makes aggregation painless.
+-any subsequent column after the first two are stored as edge attributes. So we can consider n a weight of the edge. 
+</div>
 
 ## Visualize the Graph
 
@@ -213,7 +245,7 @@ set.seed(4321)
 troll_community <- igraph::walktrap.community(g_rtwt_troll)
 troll_groups <- igraph::groups(troll_community)
 V(g_rtwt_troll)$community <- troll_community$membership
-community_pal <- scales::brewer_pal(palette = 'Dark2')(length(troll_groups))
+community_pal <- scales::brewer_pal('qual')(length(troll_groups))
 names(community_pal) <- as.character(1:length(community_pal))
 V(g_rtwt_troll)$color <- purrr::map_chr(V(g_rtwt_troll)$community, ~community_pal[.x])
 plot(g_rtwt_troll)
@@ -244,7 +276,7 @@ community_hashtags %>%
   dplyr::mutate(hashtag = purrr::map2_chr(hashtag, community, ~paste0(paste0(rep(' ', as.numeric(.y)), collapse = ''), .x))) %>%
   dplyr::mutate(hashtag = factor(hashtag, unique(hashtag))) %>%
   ggplot2::ggplot(ggplot2::aes(x = hashtag, y = count, fill = community)) +
-  ggplot2::geom_col() +
+  ggplot2::geom_col(color = 'black') +
   ggplot2::facet_wrap(~community, scales = 'free') +
   ggplot2::scale_fill_manual(values = community_pal) +
   ggplot2::coord_flip()+
@@ -367,11 +399,6 @@ plot(hashtag_g, vertex.size = 3, vertex.label = '')
 
 
 
-```{r, echo = F}
-
-
-```
-
 ## Examine largest component
 
 ```{r, echo = F}
@@ -398,7 +425,7 @@ hashtag_groups <- igraph::groups(hashtag_community)
 V(largestComponent)$community <- hashtag_community$membership
 V(largestComponent)$PageRank <- page.rank(largestComponent)$vector
 
-hashtag_pal <- scales::brewer_pal(palette = 'Dark2')(length(hashtag_groups))
+hashtag_pal <- scales::brewer_pal('qual')(length(hashtag_groups))
 names(hashtag_pal) <- as.character(1:length(hashtag_pal))
 V(largestComponent)$color <- purrr::map_chr(V(largestComponent)$community, ~hashtag_pal[.x])
 
@@ -431,7 +458,7 @@ largestComponent %>%
   dplyr::mutate(name = purrr::map2_chr(name, community, ~paste0(paste0(rep(' ', as.numeric(.y)), collapse = ''), .x))) %>%
   dplyr::mutate(name = factor(name, unique(name))) %>%
   ggplot2::ggplot(ggplot2::aes(x = name, y = PageRank, fill = as.character(community))) +
-  ggplot2::geom_col() +
+  ggplot2::geom_col(color= 'black') +
   ggplot2::facet_wrap(~community, scales = 'free') +
   ggplot2::scale_fill_manual(values = hashtag_pal) +
   ggplot2::coord_flip()+
@@ -547,5 +574,86 @@ largestComponent_summary %>%
   )
 ```
 
-# Using Simple Topic Models
+# Using Topic Models
+
+## Our Bipartite Graph
+
+```{r, echo = F}
+th_bi <- tweet_hashtag_edges %>%
+  dplyr::filter(hashtags %in% igraph::V(largestComponent)$name)  %>%
+  dplyr::filter(user_key %in% igraph::V(tweet_hashtag_g_filtered)$name) %>%
+  dplyr::select(-type)
+                
+head(th_bi) %>%
+  knitr::kable()
+```
+
+## Our Bipartite graph as a matrix
+
+```{r, echo = F}
+
+tweets_sparse_hash <- th_bi %>%
+  cast_sparse(user_key, hashtags, weight)
+
+tweets_sparse_hash[1:5, 1:5] 
+```
+
+**Also known as a Document Term Matrix**
+
+## Create a Topic Model
+
+```{r, echo = F}
+# set.seed(4321)
+# topic_model_hash <- stm(tweets_sparse_hash, K = 8,
+#                         verbose = FALSE, init.type = "Spectral")
+# readr::write_rds(topic_model_hash, 'twitter_troll_topic_model_8.rds')
+
+topic_model_hash <- readr::read_rds("twitter_troll_topic_model_8.rds")
+
+td_beta_hash <- tidy(topic_model_hash)
+
+td_beta_hash %>%
+  dplyr::group_by(topic) %>%
+  dplyr::top_n(5, beta) %>%
+  dplyr::ungroup() %>%
+  dplyr::arrange(dplyr::desc(beta)) %>%
+  dplyr::mutate(term = purrr::map2_chr(term, topic, ~paste0(paste0(rep(' ', as.numeric(.y)), collapse = ''), .x))) %>%
+  dplyr::mutate(term = factor(term, unique(term))) %>%
+  dplyr::mutate(topic = paste0("Topic ", topic)) %>%
+  ggplot2::ggplot(ggplot2::aes(term, beta, fill = as.factor(topic))) +
+  ggplot2::geom_col(alpha = 0.8, show.legend = FALSE, color = 'black') +
+  ggplot2::facet_wrap(~ topic, scales = "free") +
+  ggplot2::coord_flip() +
+  ggplot2::labs(x = NULL, y = expression(beta),
+       title = "Grouping of Hashtags: Highest word probabilities for each topic",
+       subtitle = "Different words are associated with different topics") +
+  ggplot2::scale_fill_brewer(type = 'qual') +
+  ggplot2::theme_bw()
+```
+
+## Label Hashtag with Greatest Beta
+```{r, echo = F}
+markedTopic<- td_beta_hash %>%
+  dplyr::group_by(term) %>%
+  dplyr::top_n(1, wt = beta) %>%
+  dplyr::select(term, topic, beta) 
+
+markedTopic %>%
+  head %>%
+  knitr::kable()
+```
+
+## Let's color by topics
+```{r, echo = F}
+topicLargestComponent <- largestComponent %>%
+  igraph::as_data_frame('both') %>%
+  {
+    .$vertices <- dplyr::left_join(.$vertices, markedTopic, by = c('name' = 'term')) %>%
+      dplyr::mutate(color = purrr::map_chr(topic, ~hashtag_pal[.x]));
+    
+    igraph::graph_from_data_frame(.$edges, F, .$vertices)
+  }
+
+plot(topicLargestComponent, vertex.label = '', asp = 0, vertex.size = 3, edge.width = .1)
+```
 

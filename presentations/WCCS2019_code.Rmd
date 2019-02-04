@@ -1,0 +1,203 @@
+---
+title: 'WCSS 2019: <br>Exploring Twitter Trolls'
+author: "Benjamin Ortiz Ulloa"
+date: "2/4/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(magrittr)
+```
+
+```{r, message=F}
+#load data
+tweets <- readr::read_csv('../../igraph-data-days-texas-2019/russian-troll-tweets/tweets.csv')
+
+names(tweets)
+```
+
+To create a retweeting network, we only need two columns from this data set - **user_key** and **text**. We can isolate these two columns with `dplyr::select`:
+
+```{r}
+
+retweet_network <- tweets  %>% 
+  dplyr::select(user_key, text) %>%
+  dplyr::mutate(text = stringr::str_replace_all(text, "\\r|\\n", '') ) #clean text of newlines
+
+
+
+retweet_network %>%
+  head() %>%
+  knitr::kable()
+```
+
+Tweets that are actually retweets begin with **RT**.  Because we only care about tweets that were retweeted, we can use `dplyr::filter` to only include instances of retweets. `stringr::str_detect` returns a boolean (*TRUE*/*FALSE*) for text that includes a string we are looking for.
+
+```{r}
+retweet_network <- retweet_network %>%
+  dplyr::filter(stringr::str_detect(text, '^RT\\s')) 
+
+retweet_network %>%
+  head() %>%
+  knitr::kable()
+```
+
+There is a clear pattern in the text. The character string *RT* is always followed by the twitter handle that is being retweeted. We can use `stringr::str_extract` to pull the twitter handles and `dplyr::mutate` to create a new column with this extracted information.
+
+The code below includes `(?<=@)[^:]+(?=:)`. This is a regex string. [Click this link to learn more about regex](). The other functions are used for cleaning and formatting purposes.
+
+```{r}
+
+retweet_network <- retweet_network %>%
+  dplyr::mutate(retweeted_account = stringr::str_extract(text, '(?<=@)[^:]+(?=:)') %>%
+                  stringr::str_to_lower()) %>% #standardize twitter handles to lower case
+  dplyr::filter(!is.na(retweeted_account)) %>% #remove text that starts with "RT" but aren't actually retweets
+  dplyr::select(user_key, retweeted_account, text) %>% #reorder columns
+  dplyr::distinct()
+
+retweet_network %>%
+  head() %>%
+  knitr::kable()
+```
+
+We don't necessarily care about the individual tweets. What we really care about is who a troll retweeted and how often. We can use `dplyr::count` to aggregate the total number of instances a particular `user_key` retweeted another acount
+
+```{r}
+retweet_network_wt <- retweet_network %>%
+  dplyr::count(user_key, retweeted_account, sort = T)
+
+retweet_network_wt %>%
+  head() %>%
+  knitr::kable()
+```
+
+This is a data frame with `r nrow(retweet_network_wt)`. This data frame represents an edge list and so we may have too many edges to get a good understanding of our data. We can filter the edges down by choosing a cutoff for the edges. That is, if we assume that a troll retweeting an account less than 5 times is insignificant for our analysis, then we can remove them and clean up our graph. 
+
+```{r}
+filter_n <- 5
+
+retweet_network_wt <- retweet_network_wt  %>%
+  dplyr::filter(n >= filter_n) 
+
+retweet_network_wt %>%
+  head() %>%
+  knitr::kable()
+```
+
+Cool, now we have only `r nrow(retweet_network_wt)` edges in our graph. Let's now convert the edge list data frame into an actual **igraph** graph. We can do this using `igraph::graph_from_data_frame`
+
+```{r}
+g_rtwt <- igraph::graph_from_data_frame(retweet_network_wt)
+
+summary(g_rtwt)
+```
+
+The **D** at the top of the summary stands for **Directed Graph**, that is, direction matters for the edges. The **N** stands for **Named Graph**, that is, each node has a unque name. We can add metadata to the graph directly with `$` notation - similar to how we would in a list. Any valid name for a list or data frame will be a valid name for a graph attribute. The number of nodes (`r igraph::vcount(g_rtwt)`) and the number of edges (`r igraph::ecount(g_rtwt)`) follows the graph's metadata. We are also given a list of edge attributes (**e/c(haracter)**, **e/n(numeric)**, **e/l(ogical)**) and vertex attributes (**v/...**). 
+
+```{r}
+g_rtwt$name <- '2016 Russian Twitter Troll Retweet Network'
+g_rtwt$info <- "A graph inspired by NBC's and Neo4j's exploration."
+
+summary(g_rtwt)
+```
+
+The name attribute is a special attribute for a graph and is shown in the summary. We can use `$` notation to retrieve  other graph attributes. 
+
+```{r}
+g_rtwt$info
+```
+If we want to plot a graph, then we simply need to use the `plot` function. For **igraph** graphs, plot takes special parameters to manipulate the vertices and edges on the plot. We will not go into depth about plotting graphs, but if you want to learn more, then please visit [Katya Ognyanova's detail tutorials on graph visualization.](). You can also use `?igraph.plotting` to learn more. 
+
+```{r}
+set.seed(4321)
+plot(
+  g_rtwt,
+  vertex.size = 2,
+  vertex.label = '',
+  edge.arrow.size = .05,
+  edge.width = .25,
+  asp = 0 #aspect ratio
+)
+```
+
+**igraph** can readily calculate many different centrality measurements such as `igraph::betweenness`, `igraph::degree`, and `igraph::eigen_centrality`. We will focus on `igraph::page_rank`. These functions return scores at the node level and the order of the scores correspond with the order of the vertices. 
+
+```{r}
+pr <- igraph::page_rank(g_rtwt)$vector
+head(pr)
+head(igraph::V(g_rtwt)$name)
+```
+
+Because these measurements have the same order of the vertices, we can store the measurements as a vertex attribute. 
+
+```{r}
+igraph::V(g_rtwt)$PageRank <- pr
+igraph::V(g_rtwt)[[1:6]]
+```
+
+If we want to match the vertex information with outside information, the easiest way we can do that is convert the vertex list into a data frame with `igraph::as_data_frame` and then join it with the new data with `dplyr::?_join`. Let's combine the vertex list with a troll's total number of tweets. 
+
+```{r}
+vertex_df <- igraph::as_data_frame(g_rtwt, 'vertices') %>%
+  dplyr::arrange(desc(PageRank))
+
+edges_df <- igraph::as_data_frame(g_rtwt, 'edges')
+  
+total_tweets <- tweets %>%
+  dplyr::select(user_key, text) %>%
+  dplyr::count(user_key) %>%
+  dplyr::rename(TotalTweets = n)
+
+vertex_df <- dplyr::left_join(vertex_df, total_tweets, by = c('name' = 'user_key'))
+
+vertex_df %>%
+  head() %>%
+  knitr::kable()
+```
+
+If the **TotalTweets** of a node is `NA`, then the account is not listed in the list of trolls. This means the twitter trolls are retweeting tweets from real accounts. Let's recreate the network and use the **TotalTweets** vertex attribute as something to filter out. We can actuaally remove vertices from a graph with `-`.
+
+```{r}
+g_rtwt <- igraph::graph_from_data_frame(edges_df, T, vertex_df) %>%
+  {. - igraph::V(.)[is.na(TotalTweets)]} %>%
+  {. - igraph::V(.)[igraph::degree(.) == 0]} #remove unconnected nodes
+
+summary(g_rtwt)
+```
+
+Let's re-plot the graph.
+
+```{r}
+set.seed(4321)
+g_rtwt %>%
+  plot(
+    vertex.size = igraph::V(.)$PageRank/max(igraph::V(.)$PageRank) * 5 + 2,
+    vertex.label = '',
+    edge.arrow.size = .05,
+    edge.width = .25,
+    asp = 0 #aspect ratio
+  )
+```
+
+**igraph** has a number of community detection alogrithms to use including `igraph::informap.community`, `igraph::spinglass.community`, and `igraph::fastgreedy.community`. Here, we will use `igraph::walktrap.community`. 
+```{r}
+g_community <- igraph::walktrap.community(graph = g_rtwt)
+names(g_community)
+```
+
+The the community membership is listed in the same order as the vertices. This means we can store the membership as a vertex attribute. The communities are repesented as numbers. This particular graph has `max(g_community$membership)` communities. We can create a color palette for these communities. 
+
+```{r}
+igraph::V(g_rtwt)$community <- g_community$membership
+
+community_pal <- scales::brewer_pal('qual')(max(igraph::V(g_rtwt)$community))
+names(community_pal) <- 1:max(igraph::V(g_rtwt)$community)
+
+community_pal
+```
+
+**color** is a special vertex attribute. If it exists, then the color stored in the vertex is automatically plotted. Let's iterate over the vertice and assign a color according to it's communiy
