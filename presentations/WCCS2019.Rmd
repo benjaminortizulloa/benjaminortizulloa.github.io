@@ -1,7 +1,7 @@
 ---
 title: 'WCSS 2019: <br>Exploring Twitter Trolls'
 author: "Benjamin Ortiz Ulloa"
-date: "2/3/2019"
+date: "2/5/2019"
 output: ioslides_presentation
 ---
 
@@ -84,17 +84,23 @@ retweet_network_wt %>%
 ```{r}
 g_rtwt <- igraph::graph_from_data_frame(retweet_network_wt, T) %>%
   {V(.)$pr <- igraph::page_rank(., directed = T)$vector; .} %>%
-  {temp <- igraph::as_data_frame(., 'both'); igraph::graph_from_data_frame(temp$edges, T, dplyr::arrange(temp$vertices, pr))} %>%
+  {
+    temp <- igraph::as_data_frame(., 'both');
+    igraph::graph_from_data_frame(temp$edges, 
+                                  T, 
+                                  dplyr::arrange(temp$vertices, pr))
+  } %>%
   {
     set.seed(4321); 
     layout = igraph::layout_nicely(.);
     V(.)$x <- layout[,1];
     V(.)$y <- layout[,2];
-    .}
+    .
+  }
 
 g_rtwt %>%
   plot(
-    vertex.size = 1,
+    vertex.size = 2,
     vertex.label = '',
     edge.arrow.size = .05,
     edge.width = .25,
@@ -108,7 +114,7 @@ g_rtwt %>%
 ```{r, echo = F}
 g_rtwt %>%
   plot(
-    vertex.size = V(.)$pr/max(V(.)$pr) * 5,
+    vertex.size = V(.)$pr/max(V(.)$pr) * 5+ 1,
     vertex.label = '',
     edge.arrow.size = .05,
     edge.width = .25,
@@ -195,7 +201,8 @@ g_rtwt_troll %>%
   igraph::as_data_frame('vertices') %>%
   dplyr::arrange(dplyr::desc(PageRank)) %>%
   head(10) %>%
-  dplyr::select(-x, -y) %>%
+  dplyr::select(name, PageRank, InStrength, OutStrength,
+                RetweetedTrolls, OriginalTweets) %>%
   knitr::kable()
 ```
 
@@ -242,7 +249,10 @@ community_hashtags %>%
   ggplot2::scale_fill_manual(values = community_pal) +
   ggplot2::coord_flip()+
   ggplot2::theme_bw() +
-  ggplot2::theme(legend.position="none") 
+  ggplot2::theme(legend.position="none") +
+  ggplot2::labs(
+    x = ''
+  )
 ```
 
 # Explore the usage of hashtags
@@ -298,8 +308,10 @@ tweet_hashtag_nodes <- dplyr::bind_rows(
 tweet_hashtag_g <- tweet_hashtag_edges %>%
   graph_from_data_frame(vertices = tweet_hashtag_nodes)
 
+filter_n <- 6
+
 tweet_hashtag_g_filtered <- tweet_hashtag_g %>%
-  {. - E(.)[weight <= 5]} %>%
+  {. - E(.)[weight < filter_n]} %>%
   {. - V(.)[degree(.) == 0]} %>%
   {.$asp <- 0; .} %>%
   {E(.)$width <- .1; .}
@@ -310,11 +322,11 @@ tweet_hashtag_g_filtered %>%
      vertex.label = '',
      edge.arrow.mode = '-',
      main = stringr::str_glue("Troll - Hashtag Bipartite\n{V(.)[type == 'user'] %>% length()} Trolls and {V(.)[type == 'hashtag'] %>% length()} Hashtags"),
-     sub = "Connections where Trolls used a hashtag less than 6 times were removed"
+     sub = stringr::str_glue("Connections where Trolls used a hashtag less than {filter_n} times were removed")
      )
 ```
 
-## Project Bipartite to get 
+## Indirect Hashtag Connections
 
 ```{r, echo = F, message = F, warning= F}
 tweet_hashtag_g_filtered %>%
@@ -335,35 +347,36 @@ tweet_hashtag_g_filtered %>%
   }
 
 set.seed(4321)
+l <- layout_nicely(user_g)
+V(user_g)$x <- l[,1]
+V(user_g)$y <- l[,2]
+plot(user_g, vertex.size = 3, vertex.label = '')
+
+```
+
+## Indirect User Connections
+
+```{r, echo = F}
+
+set.seed(4321)
 l <- layout_nicely(hashtag_g)
 V(hashtag_g)$x <- l[,1]
-V(hashtag_g)$y
+V(hashtag_g)$y <- l[,2]
 plot(hashtag_g, vertex.size = 3, vertex.label = '')
 ```
 
-## Take a sample of each component
+
 
 ```{r, echo = F}
-hashtag_g_components <- igraph::components(hashtag_g)
 
-hashtag_g_components %>% 
-  igraph::groups() %>%
-  purrr::map(function(x){
-    tmp <- V(hashtag_g)[name %in% x];
-    tmpd <- tmp$degree
-    names(tmpd) <- tmp$name;
-    tmpd %>%
-      sort(T) %>%
-      head() %>%
-      names() 
-    }) %>%
-  tibble::enframe('Component', 'Hashtag') %>%
-  tidyr::unnest() 
+
 ```
 
 ## Examine largest component
 
 ```{r, echo = F}
+hashtag_g_components <- igraph::components(hashtag_g)
+
 largestComponent <- hashtag_g_components %>%
   igraph::groups() %>%
   {
@@ -426,4 +439,113 @@ largestComponent %>%
   ggplot2::theme(legend.position="none")
 ```
 
+## How do these groups interact?
+
+```{r}
+largestComponent_summary <- largestComponent %>%
+  {
+    E(.)$tailCommunity <- tail_of(., E(.))$community; #store node information in edges 
+    E(.)$headCommunity <- head_of(., E(.))$community; #to refrence later
+    .
+  } %>%
+  igraph::as_data_frame('both') %>%
+  {
+    el <- .$edges %>%
+      dplyr::filter(tailCommunity != headCommunity) %>%
+      #1 - 6 is same as 6 - 1
+      dplyr::mutate(
+        tail = purrr::map2_dbl(tailCommunity, headCommunity, min) %>% round %>% as.character(),
+        head = purrr::map2_dbl(tailCommunity, headCommunity, max) %>% round %>% as.character()
+      ) %>%
+      dplyr::group_by(tail, head) %>%
+      tidyr::nest() %>%
+      dplyr::mutate(data = purrr::map(data, function(x){
+        top_hashes <- x %>%
+          dplyr::arrange(dplyr::desc(weight)) %>%
+          head(3) %>%
+          {paste(.$from, .$to, sep = ' | ', collapse = '\n')}
+
+        if(x$tailCommunity[1] %in% c(4, 1) & x$headCommunity[1] %in% c(4,1)){
+          top_hashes <- paste('\n\n\n\n\n\n', top_hashes)
+        }
+        
+        if(x$tailCommunity[1] %in% c(5,4) & x$headCommunity[1] %in% c(5,4)) {
+          top_hashes <- paste(top_hashes, '\n\n\n\n\n\n\n\n')
+        }
+       
+         
+        
+
+        tibble::tibble(
+          top_hashes,
+          sum_weight = sum(x$weight),
+          ave_weight = mean(x$weight),
+          count = nrow(x)
+        )
+      })) %>%
+      tidyr::unnest()
+
+    nl <- .$vertices %>%
+      dplyr::mutate(community = as.character(community)) %>%
+      dplyr::group_by(community) %>%
+      tidyr::nest() %>%
+      dplyr::mutate(top_hashes = purrr::map_chr(data, function(x){
+        x %>%
+          head %>%
+          .$name %>%
+          paste(collapse = '\n') %>%
+          stringr::str_replace_all('hashtag_', '')
+      })) 
+    # %>%
+    #   dplyr::mutate(x = purrr::map_dbl(data, function(x){
+    #     mean(x$x)
+    #   })) %>%
+    #   dplyr::mutate(y = purrr::map_dbl(data, function(x){
+    #     mean(x$y)
+    #   }))
+
+    set.seed(1)
+    igraph::graph_from_data_frame(el, F, nl) %>%
+      {
+        l <- igraph::layout_nicely(.) #store layout information in vertices
+        V(.)$x <- l[,1]
+        V(.)$y <- l[,2]
+        .
+      }
+  }
+
+
+largestComponent_summary %>% 
+  plot(vertex.color = purrr::map_chr(V(.)$name, function(x){hashtag_pal[x]}), asp = 0)
+```
+
+
+## Community Hashtags
+
+```{r, echo = F}
+largestComponent_summary %>%
+  plot(
+    vertex.label = V(.)$top_hashes,
+    vertex.label.cex = .5,
+    vertex.size = 0, 
+    vertex.shape = 'none',
+    asp = 0) 
+```
+
+## Hashtags Connecting Communities
+
+```{r, echo = F}
+largestComponent_summary %>%
+  {. - V(.)[degree(.) == 0]} %>%
+  plot(
+    edge.label = E(.)$top_hashes,
+    edge.label.cex = .5,
+    vertex.size = 1,
+    vertex.shape = 'none',
+    vertex.label = '',
+    asp = 0
+  )
+```
+
 # Using Simple Topic Models
+
