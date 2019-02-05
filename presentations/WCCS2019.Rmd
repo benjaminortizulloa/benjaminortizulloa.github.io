@@ -14,7 +14,7 @@ library(igraph)
 
 # Introduction to 2016 Russian Twitter Troll Dataset
 
-## According to the US Office of the Director of National Intelligence
+## [According to the US Office of the Director of National Intelligence](https://www.dni.gov/files/documents/ICA_2017_01.pdf)
 
 - Russian President Vladimir Putin ordered an influence campaign in 2016 aimed at the US presidential election. Russia’s goals were to undermine public faith in the US democratic process, denigrate Secretary Clinton, and harm her electability and potential presidency.
 - Moscow's influence campaign followed a Russian messaging strategy that blends covert intelligence operations—such as cyber activity—with overt efforts by Russian Government agencies, state-funded media, third-party intermediaries, and paid social media users or "trolls."
@@ -29,7 +29,8 @@ library(igraph)
 
 - The trolls were removed from Twitter once they were identified.
 - NBC News was able to recover the tweets posted by the trolls and made the data public.
-- NBC collaborated with Neo4j to conduct network analysis and answer the question - how did these trolls succeed?
+- [NBC collaborated with Neo4j to conduct network analysis and answer the question - how did these trolls succeed?](https://neo4j.com/blog/story-behind-russian-twitter-trolls/)
+- A subset of this data can be found on [Kaggle](https://www.kaggle.com/vikasg/russian-troll-tweets)
 
 <div class="notes">
 -Thanks to NBC, Data about the trolls' tweets and profiles are now public for people to explore. 
@@ -54,6 +55,12 @@ library(igraph)
 -The idea people are more likely to agree with a troll's claims if their personas match.
 -Republicans are more likely to agree with republican style trolls and those who are part of the black lives matter movement are more likely to agree with trolls that claim to share their sentiment.
 </div>
+
+## NBC's and Neo4j's Analysis
+
+```{r pressure, echo=FALSE,  out.height = '450px', out.width = '300px'}
+knitr::include_graphics("russian-troll-twitter-network-pagerank-graph-algorithm.png")
+```
 
 ## Internal Workings
 
@@ -115,21 +122,9 @@ retweet_network_wt %>%
 
 ```{r}
 g_rtwt <- igraph::graph_from_data_frame(retweet_network_wt, T) %>%
-  {V(.)$pr <- igraph::page_rank(., directed = T)$vector; .} %>%
-  {
-    temp <- igraph::as_data_frame(., 'both');
-    igraph::graph_from_data_frame(temp$edges, 
-                                  T, 
-                                  dplyr::arrange(temp$vertices, pr))
-  } %>%
-  {
-    set.seed(4321); 
-    layout = igraph::layout_nicely(.);
-    V(.)$x <- layout[,1];
-    V(.)$y <- layout[,2];
-    .
-  }
+  {V(.)$pr <- igraph::page_rank(., directed = T)$vector; .} 
 
+set.seed(4321)
 g_rtwt %>%
   plot(
     vertex.size = 2,
@@ -144,6 +139,7 @@ g_rtwt %>%
 ## Calculate (Directed) PageRank
 
 ```{r, echo = F}
+set.seed(4321)
 g_rtwt %>%
   plot(
     vertex.size = V(.)$pr/max(V(.)$pr) * 5+ 1,
@@ -197,22 +193,24 @@ Some twitter handles were not counted in the data because they were not among th
 ## Remove Non-Trolls and Recalculate
 
 ```{r, echo = F, message = F}
-retweet_network_trolls <- retweet_network %>%
-  dplyr::distinct()  %>%
-  dplyr::filter(retweeted %in% user_key) %>%
-  dplyr::filter(retweeted %in% user_key) %>%
-  dplyr::filter(retweeted %in% user_key) 
 
-retweet_network_trolls_wt <- retweet_network_trolls %>%
-  dplyr::count(user_key, retweeted, sort = T)
+pr <- igraph::page_rank(g_rtwt)$vector
+igraph::V(g_rtwt)$PageRank <- pr
 
-retweet_trolls_nl <- retweet_network_trolls %>%
+vertex_df <- igraph::as_data_frame(g_rtwt, 'vertices') %>%
+  dplyr::arrange(desc(PageRank))
+
+edges_df <- igraph::as_data_frame(g_rtwt, 'edges')
+  
+total_tweets <- tweets %>%
+  dplyr::select(user_key, text) %>%
   dplyr::count(user_key) %>%
-  dplyr::rename(RetweetedTrolls = n) %>%
-  dplyr::left_join(original_tweets_ag) %>%
-  dplyr::arrange(desc(OriginalTweets))
+  dplyr::rename(TotalTweets = n)
 
-g_rtwt_troll <- igraph::graph_from_data_frame(retweet_network_trolls_wt, T, retweet_trolls_nl) %>%
+vertex_df <- dplyr::left_join(vertex_df, total_tweets, by = c('name' = 'user_key'))
+g_rtwt_troll <-igraph::graph_from_data_frame(edges_df, T, vertex_df) %>%
+  {. - igraph::V(.)[is.na(TotalTweets)]} %>%
+  {. - igraph::V(.)[igraph::degree(.) == 0]} %>%#remove unconnected nodes
   {set.seed(4321); l <- igraph::layout_nicely(.); V(.)$x = l[,1]; V(.)$y = l[,2]; .} %>%
   {V(.)$PageRank <- igraph::page_rank(.)$vector; .} %>%
   {V(.)$InStrength <- igraph::strength(., mode = 'in', weights = E(.)$n); .} %>%
@@ -223,8 +221,10 @@ g_rtwt_troll <- igraph::graph_from_data_frame(retweet_network_trolls_wt, T, retw
   {E(.)$width = .1; .} %>%
   {.$asp = 0; .}
 
+set.seed(4321)
 plot(g_rtwt_troll)
 ```
+
 
 ## Analyze Cleaned Network
 
@@ -234,7 +234,7 @@ g_rtwt_troll %>%
   dplyr::arrange(dplyr::desc(PageRank)) %>%
   head(10) %>%
   dplyr::select(name, PageRank, InStrength, OutStrength,
-                RetweetedTrolls, OriginalTweets) %>%
+                TotalTweets) %>%
   knitr::kable()
 ```
 
@@ -358,7 +358,7 @@ tweet_hashtag_g_filtered %>%
      )
 ```
 
-## Indirect Hashtag Connections
+## Indirect User Connections
 
 ```{r, echo = F, message = F, warning= F}
 tweet_hashtag_g_filtered %>%
@@ -386,7 +386,7 @@ plot(user_g, vertex.size = 3, vertex.label = '')
 
 ```
 
-## Indirect User Connections
+## Indirect Hashtag Connections
 
 ```{r, echo = F}
 
@@ -590,22 +590,22 @@ head(th_bi) %>%
 
 ## Our Bipartite graph as a matrix
 
+**Also known as a Document Term Matrix**
+
 ```{r, echo = F}
 
 tweets_sparse_hash <- th_bi %>%
   cast_sparse(user_key, hashtags, weight)
 
-tweets_sparse_hash[1:5, 1:5] 
+tweets_sparse_hash[1:10, 1:5] 
 ```
-
-**Also known as a Document Term Matrix**
 
 ## Create a Topic Model
 
 ```{r, echo = F}
 # set.seed(4321)
-# topic_model_hash <- stm(tweets_sparse_hash, K = 8,
-#                         verbose = FALSE, init.type = "Spectral")
+# topic_model_hash <- stm::stm(tweets_sparse_hash, K = 8,
+#                              verbose = FALSE, init.type = "Spectral")
 # readr::write_rds(topic_model_hash, 'twitter_troll_topic_model_8.rds')
 
 topic_model_hash <- readr::read_rds("twitter_troll_topic_model_8.rds")
@@ -657,3 +657,30 @@ topicLargestComponent <- largestComponent %>%
 plot(topicLargestComponent, vertex.label = '', asp = 0, vertex.size = 3, edge.width = .1)
 ```
 
+# Resources to learn more
+
+## [Tidyverse: Data Cleaning + Visualization](https://r4ds.had.co.nz)
+
+```{r echo=FALSE,  out.height = '450px'}
+knitr::include_graphics('r4ds.png')
+```
+
+## [Purrr: Iteration Helpers](https://jennybc.github.io/purrr-tutorial/)
+
+```{r echo=FALSE,  out.height = '450px'}
+knitr::include_graphics('purrr.png')
+```
+
+## [Tidy Text Mining](https://www.tidytextmining.com)
+
+```{r echo=FALSE,  out.height = '450px', out.width = '300px'}
+knitr::include_graphics('tidytext.png')
+```
+
+## [Visualizing Graphs: My Hero](http://kateto.net/tutorials/)
+
+```{r echo=FALSE,  out.height = '450px'}
+knitr::include_graphics('katyaognyanova.png')
+```
+
+## Code to make this
