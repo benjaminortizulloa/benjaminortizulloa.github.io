@@ -683,4 +683,8 @@ knitr::include_graphics('tidytext.png')
 knitr::include_graphics('katyaognyanova.png')
 ```
 
-## Code to make this
+## [Code to replicate](https://github.com/benjaminortizulloa/wwcs2019)
+
+```{r echo=FALSE,  out.height = '450px'}
+knitr::include_graphics('wwcs2019.png')
+```
