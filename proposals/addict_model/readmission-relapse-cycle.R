@@ -212,6 +212,7 @@ together %>%
 dev.off()
 
 #image 2
+png('r3_cycle_initial_results.png', 1100, 800)
 together %>%
   select(time, pStable, iteration, pSoberHouse, type) %>%
   gather(measure, percent, - time, -iteration, -type) %>%
@@ -238,4 +239,4 @@ together %>%
     color = '',
     alpha = ''
   ) 
-
+dev.off()
