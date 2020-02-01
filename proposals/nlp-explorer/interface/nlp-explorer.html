@@ -327,6 +327,11 @@
             .attr("width", d => d[time + '_x1'] - d[time + '_x0'])
             .attr("height", d => d[time + '_y1'] - d[time + '_y0'])
 
+        leaf.append('text')
+            .attr('class', 'parentText')
+            .attr('x', "2px")
+            .attr('y', d => (d[time + 'y1'] - d[tie + 'y0']) / 2)
+            .text(d => topic5.filter(x => x.topic_5 == d.data.name)[0].term)
         // infoButtons.attr('transform', d => `translate(${d[time+'_x1'] - d[time + '_x0'] - 20}, 5})`)
     }
 </script>
